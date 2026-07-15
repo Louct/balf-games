@@ -42,6 +42,7 @@
             <div class="modal-top">
                 <div class="modal-title" id="modalTitle">Loading...</div>
                 <select class="source-sel" id="sourceSel" onchange="localStorage.setItem('movieSourceIdx', this.value); setIframe()"></select>
+                <span class="modal-close" id="modalFs" title="Fullscreen" style="display:grid;place-items:center"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 5V1h4M9 1h4v4M13 9v4H9M5 13H1V9"/></svg></span>
                 <span class="modal-close" id="modalClose">✕</span>
             </div>
             <div class="ep-bar" id="epBar">
@@ -157,10 +158,9 @@
         async function loadMore() {
             if (isLoadingMore) return;
             isLoadingMore = true;
-            var btn = grid.querySelector(".load-more");
-            if (btn) {
-                btn.classList.add("loading");
-                btn.textContent = "Loading…";
+            if (loadMoreBtn) {
+                loadMoreBtn.classList.add("loading");
+                loadMoreBtn.textContent = "Loading…";
             }
             try {
                 if (currentMode === "search") await doSearch(true);
@@ -170,8 +170,13 @@
             }
         }
 
+        var loadMoreBtn = null;
+
         function renderGrid(list, hasMore) {
             grid.innerHTML = "";
+            if (loadMoreBtn && loadMoreBtn.parentNode) loadMoreBtn.parentNode.removeChild(loadMoreBtn);
+            loadMoreBtn = null;
+
             if (!list || list.length === 0) {
                 statusEl.textContent = "No results.";
                 return;
@@ -195,14 +200,15 @@
                 card.addEventListener("click", function() { openPlayer(m.id, type, title, year, rating); });
                 frag.appendChild(card);
             });
-            if (hasMore) {
-                var more = document.createElement("div");
-                more.className = "load-more";
-                more.textContent = "Load More";
-                more.addEventListener("click", loadMore);
-                frag.appendChild(more);
-            }
             grid.appendChild(frag);
+
+            if (hasMore) {
+                loadMoreBtn = document.createElement("button");
+                loadMoreBtn.className = "load-more";
+                loadMoreBtn.textContent = "Load more";
+                loadMoreBtn.addEventListener("click", loadMore);
+                grid.parentNode.insertBefore(loadMoreBtn, grid.nextSibling);
+            }
         }
 
         function escapeHtml(s) {
@@ -318,6 +324,13 @@
 
         document.getElementById("modalClose").addEventListener("click", closeModal);
         modal.addEventListener("click", function(e) { if (e.target === modal) closeModal(); });
+
+        var fsBtn = document.getElementById("modalFs");
+        fsBtn.addEventListener("click", function() {
+            var el = document.getElementById("player");
+            if (el.requestFullscreen) el.requestFullscreen();
+            else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+        });
         document.addEventListener("keydown", function(e) {
             if (e.key === "Escape" && modal.classList.contains("open")) closeModal();
         });
