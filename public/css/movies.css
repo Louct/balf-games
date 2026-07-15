@@ -223,7 +223,7 @@ main {
 }
 
 .source-sel {
-    background: rgba(255,255,255,0.07);
+    background: #1a1a1c;
     border: 1px solid rgba(255,255,255,0.12);
     color: #fff;
     border-radius: 6px;
@@ -231,6 +231,11 @@ main {
     font-size: 0.83rem;
     outline: none;
     cursor: pointer;
+}
+
+.source-sel option {
+    background: #1a1a1c;
+    color: #fff;
 }
 
 .modal-close {
@@ -264,7 +269,7 @@ main {
 }
 
 .ep-bar select {
-    background: rgba(255,255,255,0.07);
+    background: #1a1a1c;
     border: 1px solid rgba(255,255,255,0.1);
     color: var(--text-color, #f5f5f5);
     border-radius: 6px;
@@ -272,6 +277,11 @@ main {
     font-size: 0.83rem;
     outline: none;
     cursor: pointer;
+}
+
+.ep-bar select option {
+    background: #1a1a1c;
+    color: #f5f5f5;
 }
 
 .ep-btns {
