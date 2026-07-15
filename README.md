@@ -1,30 +1,30 @@
 <div align="center">
   <img src="public/assets/images/icon.png" width="80" />
   <h1>Aetheris</h1>
-  <p>A feature-packed site with games, apps, a built-in web proxy, movies, chat, and more.</p>
+  <p>games, proxy, movies, chat: all in one place</p>
 </div>
 
-## Features
+## what's inside
 
-- **Games** — large library with favorites, search/filter, and popular section
-- **Apps** — curated collection of web apps
-- **Web Proxy** — browse any site through Scramjet + libcurl/epoxy transport
-- **Movies & TV** — browse and watch via TMDB
-- **Chat** — built-in DM system with user accounts
-- **Cheats** — bookmarklet-style browser tools
-- **Tab Cloaking** — disguise your tab title & icon (presets for Google, Drive, Classroom, etc.)
-- **Panic Key** — instantly redirect to a safe URL with a hotkey
-- **Themes** — multiple color themes
-- **About:blank Launch** — open the site in an about:blank tab
-- **Desktop UA Spoofing** — pretend to be on desktop from a mobile device
-- **Performance Mode** — reduced animations for low-end devices
-- **Bug Reports** — built-in report form on the home page
+- **Games**: big library with search, filters, favorites, and a popular section
+- **Apps**: a hand-picked collection of useful web apps
+- **Web Proxy**: browse anything through Scramjet with libcurl/epoxy transport
+- **Movies & TV**: search and watch using TMDB
+- **Chat**: DMs with user accounts built right in
+- **Cheats**: bookmarklet tools you can drop into any site
+- **Tab Cloaking**: change your tab's title and icon (Google, Drive, Classroom presets and more)
+- **Panic Key**: hit a hotkey and instantly get redirected somewhere safe
+- **Themes**: a few different color themes to pick from
+- **About:blank Launch**: open the site hidden inside an about:blank tab
+- **Desktop UA Spoofing**: fool sites into thinking you're on desktop
+- **Performance Mode**: tones down animations if your device is struggling
+- **Bug Reports**: report something broken right from the home page
 
-## Self-hosting
+## self-hosting
 
-A VPS is recommended — the Scramjet proxy requires a persistent server and won't work on serverless platforms like Vercel.
+You'll want a VPS for this: the proxy needs a real persistent server and won't work on Vercel or similar platforms.
 
-**Requirements:** [Node.js](https://nodejs.org) (>=20), [Git](https://git-scm.com/download), [pnpm](https://pnpm.io), [Caddy](https://caddyserver.com)
+**you'll need:** [Node.js](https://nodejs.org) (>=20), [Git](https://git-scm.com/download), [pnpm](https://pnpm.io), [Caddy](https://caddyserver.com)
 
 ```bash
 git clone https://github.com/mynamescrax/aetheris
@@ -32,26 +32,27 @@ cd aetheris
 pnpm install
 ```
 
-Copy `.env.example` to `.env` and fill in your values:
+Set up your environment:
 
 ```bash
 cp .env.example .env
+# fill in your values
 ```
 
-Start with PM2:
+Start the server with PM2:
 
 ```bash
 pm2 start index.js --name aetheris --node-args="--env-file=/path/to/.env" --kill-timeout 5000
 pm2 save
 ```
 
-Symlink the Caddyfile and reload:
+Hook up Caddy:
 
 ```bash
 ln -s /path/to/aetheris/Caddyfile /etc/caddy/Caddyfile
 systemctl reload caddy
 ```
 
-## Credits
+## credits
 
-Game files sourced from [GN-Math](https://gn-math.dev) and [The Ultimate Game Stash](https://docs.google.com/document/d/1_FmH3BlSBQI7FGgAQL59-ZPe8eCxs35wel6JUyVaG8Q/preview?pli=1&tab=t.pvxbxnr5rcer&sle=true&pru=AAABnlARoYY*_5r087PNiPkXhHVGgjNYOA). If you fork this repo, consider giving it a star!
+Game files from [GN-Math](https://gn-math.dev) and [The Ultimate Game Stash](https://docs.google.com/document/d/1_FmH3BlSBQI7FGgAQL59-ZPe8eCxs35wel6JUyVaG8Q/preview?pli=1&tab=t.pvxbxnr5rcer&sle=true&pru=AAABnlARoYY*_5r087PNiPkXhHVGgjNYOA). if you fork this, a star would be appreciated!
