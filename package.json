@@ -1,7 +1,5 @@
 {
-	"name": "aetheris",
 	"version": "1.0.0",
-	"description": "The best website.",
 	"type": "module",
 	"engines": {
 		"npm": ">=7.0.0",
@@ -13,10 +11,6 @@
 		"lint": "eslint index.js public/",
 		"lint:fix": "eslint index.js public/ --fix"
 	},
-	"keywords": [
-		"proxy"
-	],
-	"author": "Mercury Workshop",
 	"license": "GNU AFFERO",
 	"dependencies": {
 		"@fastify/static": "^9.3.0",
