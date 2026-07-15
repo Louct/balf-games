@@ -20,23 +20,38 @@
 - **Performance Mode** — reduced animations for low-end devices
 - **Bug Reports** — built-in report form on the home page
 
-## Deploy
+## Self-hosting
 
-Tested on Vercel, but a VPS is recommended for Scramjet proxy to work properly.
+A VPS is recommended — the Scramjet proxy requires a persistent server and won't work on serverless platforms like Vercel.
 
-[![Deploy to Vercel](https://binbashbanana.github.io/deploy-buttons/buttons/remade/vercel.svg)](https://vercel.com/new/clone?repository-url=https://github.com/mynamescrax/balf-games)
-
-## Run Locally
-
-Requires [Node.js](https://nodejs.org) (>=16), [Git](https://git-scm.com/download), and [pnpm](https://pnpm.io).
+**Requirements:** [Node.js](https://nodejs.org) (>=20), [Git](https://git-scm.com/download), [pnpm](https://pnpm.io), [Caddy](https://caddyserver.com)
 
 ```bash
-git clone https://github.com/mynamescrax/balf-games
-cd balf-games
+git clone https://github.com/mynamescrax/aetheris
+cd aetheris
 pnpm install
-pnpm start
+```
+
+Copy `.env.example` to `.env` and fill in your values:
+
+```bash
+cp .env.example .env
+```
+
+Start with PM2:
+
+```bash
+pm2 start index.js --name aetheris --node-args="--env-file=/path/to/.env" --kill-timeout 5000
+pm2 save
+```
+
+Symlink the Caddyfile and reload:
+
+```bash
+ln -s /path/to/aetheris/Caddyfile /etc/caddy/Caddyfile
+systemctl reload caddy
 ```
 
 ## Credits
 
-Forked from Art Class v4. Original idea by Frogies. Game files sourced from The Ultimate Game Stash. If you fork this repo, consider giving it a star!
+Game files sourced from [GN-Math](https://gn-math.dev) and [The Ultimate Game Stash](https://docs.google.com/document/d/1_FmH3BlSBQI7FGgAQL59-ZPe8eCxs35wel6JUyVaG8Q/preview?pli=1&tab=t.pvxbxnr5rcer&sle=true&pru=AAABnlARoYY*_5r087PNiPkXhHVGgjNYOA). If you fork this repo, consider giving it a star!
