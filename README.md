@@ -1,28 +1,27 @@
 <div align="center">
   <img src="public/assets/images/icon.png" width="80" />
   <h1>Aetheris</h1>
-  <p>games, proxy, movies, chat: all in one place</p>
+  <p>games, proxy, movies and a chat: all in one place</p>
 </div>
 
 ## what's inside
 
 - **Games**: big library with search, filters, favorites, and a popular section
-- **Apps**: a hand-picked collection of useful web apps
-- **Web Proxy**: browse anything through Scramjet with libcurl/epoxy transport
-- **Movies & TV**: search and watch using TMDB
-- **Chat**: DMs with user accounts built right in
-- **Cheats**: bookmarklet tools you can drop into any site
+- **Apps**: a collection of useful web apps
+- **Web Proxy**: browse anything through Scramjet with libcurl/epoxy transports
+- **Movies & TV**: search and watch using TMDB and external sources
+- **Chat**: DMs with user accounts 
+- **Cheats**: bookmarklet tools you can use
 - **Tab Cloaking**: change your tab's title and icon (Google, Drive, Classroom presets and more)
-- **Panic Key**: hit a hotkey and instantly get redirected somewhere safe
+- **Panic Key**: hit a hotkey and get redirected somewhere safe
 - **Themes**: a few different color themes to pick from
 - **About:blank Launch**: open the site hidden inside an about:blank tab
-- **Desktop UA Spoofing**: fool sites into thinking you're on desktop
 - **Performance Mode**: tones down animations if your device is struggling
 - **Bug Reports**: report something broken right from the home page
 
 ## self-hosting
 
-You'll want a VPS for this: the proxy needs a real persistent server and won't work on Vercel or similar platforms.
+You need a VPS for this: the proxy needs a server and won't work on Vercel or similar platforms.
 
 **you'll need:** [Node.js](https://nodejs.org) (>=20), [Git](https://git-scm.com/download), [pnpm](https://pnpm.io), [Caddy](https://caddyserver.com)
 
