@@ -19,19 +19,19 @@
 	"author": "Mercury Workshop",
 	"license": "GNU AFFERO",
 	"dependencies": {
-		"@fastify/static": "^9.0.0",
-		"@mercuryworkshop/bare-mux": "^2.1.8",
+		"@fastify/static": "^9.3.0",
+		"@mercuryworkshop/bare-mux": "^2.1.9",
 		"@mercuryworkshop/epoxy-transport": "^3.0.1",
 		"@mercuryworkshop/libcurl-transport": "^1.5.2",
 		"@mercuryworkshop/scramjet": "^1.1.0",
 		"@mercuryworkshop/wisp-js": "^0.4.1",
-		"fastify": "^5.8.4",
-		"ajv": "^8.12.0",
-		"ws": "^8.20.0"
+		"ajv": "^8.20.0",
+		"fastify": "^5.10.0",
+		"ws": "^8.21.1"
 	},
 	"devDependencies": {
-		"eslint": "^10.1.0",
-		"prettier": "^3.8.1"
+		"eslint": "^10.7.0",
+		"prettier": "^3.9.5"
 	},
 	"packageManager": "pnpm@10.32.1"
 }
