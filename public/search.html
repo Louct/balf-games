@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Aetheris • Search</title>
+
+    <link rel="shortcut icon" href="./assets/images/icon.png" type="image/png" />
+    <link rel="stylesheet" href="./css/main.css?v=3" />
+    <link rel="stylesheet" href="./css/cards.css?v=3" />
+    <link rel="stylesheet" href="./css/themes.css?v=3" />
+    <link rel="stylesheet" href="./css/nav.css?v=3" />
+
+    <script src="./js/theme.js?v=2"></script>
+
+    <script src="/scram/scramjet.all.js"></script>
+    <script src="/baremux/index.js"></script>
+    <script src="register-sw.js" defer></script>
+<script defer src="./js/preload.js"></script>
+
+    <style>
+        .centered {
+          min-height: 100vh;
+          width: 100%;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 24px;
+          padding: 40px 20px;
+          transition: all 0.4s ease;
+        }
+    
+        .centered h1 {
+          font-family: "Montserrat", system-ui, sans-serif;
+          font-size: clamp(2.5rem, 8vw, 4rem);
+          font-weight: 900;
+          color: var(--text-color);
+          letter-spacing: -2px;
+          margin: 0;
+          text-align: center;
+        }
+    
+        #sj-form {
+          width: 100%;
+          max-width: 720px;
+        }
+    
+        #sj-address {
+          width: 100%;
+          height: 58px;
+          border: none;
+          outline: none;
+          border-radius: 9999px;
+          background: #05070c;
+          color: white;
+          font-size: 1.1rem;
+          padding: 0 28px;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+          transition: all 0.3s ease;
+        }
+    
+        #sj-address:focus {
+          box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent), 0 4px 20px rgba(0, 0, 0, 0.3);
+          transform: scale(1.02);
+        }
+    
+        #error-area { min-height: 28px; text-align: center; }
+        #sj-error { color: #ff6b6b; margin: 0; font-weight: 500; }
+        #sj-error-code { color: #ffd2d2; white-space: pre-wrap; word-break: break-word; margin-top: 8px; font-size: 0.9rem; max-width: 90vw; }
+    
+        #result-area {
+          width: min(1520px, 96vw);
+          height: calc(100vh - 260px);
+          min-height: 540px;
+          border-radius: 20px;
+          overflow: hidden;
+          background: #fff;
+          box-shadow: 0 15px 40px rgba(0, 0, 0, 0.35);
+          display: none;
+          border: 1px solid rgba(255,255,255,0.06);
+          position: relative;
+        }
+    
+        #result-area iframe {
+          width: 100% !important;
+          height: 100% !important;
+          border: 0 !important;
+          background: #fff;
+          display: block;
+        }
+    
+        #loading-indicator {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: var(--navbar);
+          color: var(--text-color);
+          font-family: system-ui, sans-serif;
+          font-size: 0.95rem;
+          z-index: 2;
+        }
+    
+        #loading-indicator.hidden { display: none; }
+    
+        #frame-toolbar {
+          display: none;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          flex-wrap: wrap;
+          margin-top: 12px;
+        }
+    
+        #frame-toolbar button {
+          width: 46px;
+          height: 46px;
+          border-radius: 14px;
+          border: 1px solid rgba(255,255,255,0.1);
+          background: rgba(255,255,255,0.06);
+          color: var(--text-color);
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.15rem;
+          transition: all 0.2s ease;
+        }
+    
+        #frame-toolbar button:hover {
+          background: rgba(255,255,255,0.15);
+          transform: translateY(-2px);
+        }
+    
+        .results-open { justify-content: flex-start; padding-top: 30px; }
+        .results-open h1 { font-size: clamp(2.2rem, 6vw, 3.2rem); margin-top: 0; }
+        .results-open #result-area { display: block; }
+        .results-open #frame-toolbar { display: flex; }
+    
+        @media (max-width: 900px) {
+          .centered { padding: 30px 15px; }
+          #result-area { height: calc(100vh - 210px); min-height: 460px; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="centered" id="main-container">
+        <h1>Aetheris</h1>
+
+        <form id="sj-form">
+            <input id="sj-search-engine" type="hidden" value="https://www.duckduckgo.com/search?q=%s" />
+            <input id="sj-address" class="pxyinput" type="text" placeholder="Search or enter a URL..." autocomplete="off" spellcheck="false" />
+        </form>
+
+        <div id="error-area">
+            <p id="sj-error"></p>
+            <pre id="sj-error-code"></pre>
+        </div>
+
+        <div id="frame-toolbar">
+            <button onclick="toolbarfullscreen()" title="Fullscreen">⛶</button>
+            <button onclick="toolbarnewtab()" title="Open in new tab">↗</button>
+            <button onclick="toolbarrefresh()" title="Refresh">⟳</button>
+        </div>
+
+        <div id="result-area">
+            <div id="loading-indicator" class="hidden">Loading…</div>
+        </div>
+    </div>
+
+    <script>
+        var proxy = null;
+        var currentframe = null;
+        var lasturl = null;
+
+        async function startproxy() {
+          if (proxy) return proxy;
+
+          if (typeof $scramjetLoadController !== "function") {
+            throw new Error("Scramjet not loaded — /scram/scramjet.all.js missing?");
+          }
+
+          var scram = $scramjetLoadController();
+          var ScramjetController = scram.ScramjetController;
+          proxy = new ScramjetController({
+            files: {
+              wasm: "/scram/scramjet.wasm.wasm",
+              all:  "/scram/scramjet.all.js",
+              sync: "/scram/scramjet.sync.js",
+            },
+          });
+
+          await proxy.init();
+
+          if (typeof BareMux === "undefined") {
+            throw new Error("BareMux not loaded — /baremux/index.js missing?");
+          }
+
+          var connection = new BareMux.BareMuxConnection("/baremux/worker.js");
+          var wispurl = (location.protocol === "https:" ? "wss" : "ws") +
+                        "://" + location.host + "/wisp/";
+          var tc = window.__aetherisTransportConfig
+            ? window.__aetherisTransportConfig(wispurl)
+            : { path: "/libcurl/index.mjs", args: [{ websocket: wispurl }] };
+          if ((await connection.getTransport()) !== tc.path) {
+            await connection.setTransport(tc.path, tc.args);
+          }
+
+          return proxy;
+        }
+
+        async function waitforsw() {
+          if (!("serviceWorker" in navigator)) {
+            throw new Error("Service workers aren't supported in this browser.");
+          }
+
+          await navigator.serviceWorker.ready;
+          if (navigator.serviceWorker.controller) return;
+
+          await Promise.race([
+            new Promise(function(resolve) {
+              navigator.serviceWorker.addEventListener("controllerchange", resolve, { once: true });
+            }),
+            new Promise(function(_, reject) {
+              setTimeout(function() {
+                reject(new Error("Service worker didn't take control. Try reloading the page."));
+              }, 5000);
+            }),
+          ]);
+        }
+
+        function resolveurl(input) {
+          var raw = (input || "").trim();
+          if (!raw) return null;
+
+          var hasscheme    = /^https?:\/\//i.test(raw);
+          var lookslikeurl = /^[^\s]+\.[^\s]+$/.test(raw);
+
+          if (!hasscheme && !lookslikeurl) {
+            var engine = document.getElementById("sj-search-engine").value;
+            return engine.replace("%s", encodeURIComponent(raw));
+          }
+          return hasscheme ? raw : "https://" + raw;
+        }
+
+        function mountframe(p, resultarea) {
+          var handle = p.createFrame();
+          var el = handle.frame || handle;
+          if (!(el instanceof HTMLElement)) {
+            throw new Error("Scramjet didn't return a usable frame element.");
+          }
+
+          el.setAttribute("allowfullscreen", "");
+          el.setAttribute("referrerpolicy", "no-referrer");
+          el.style.cssText = "width:100%;height:100%;border:0;background:#fff;display:block;";
+
+          Array.from(resultarea.children).forEach(function(c) {
+            if (c.id !== "loading-indicator") resultarea.removeChild(c);
+          });
+          resultarea.appendChild(el);
+
+          return handle;
+        }
+
+        async function gourl(input) {
+          var errorel    = document.getElementById("sj-error");
+          var errorcode  = document.getElementById("sj-error-code");
+          var resultarea = document.getElementById("result-area");
+          var container  = document.getElementById("main-container");
+          var loader     = document.getElementById("loading-indicator");
+
+          errorel.textContent  = "";
+          errorcode.textContent = "";
+
+          var finalurl = resolveurl(input);
+          if (!finalurl) {
+            errorel.textContent = "enter a url or search query.";
+            return;
+          }
+
+          container.classList.add("results-open");
+          loader.classList.remove("hidden");
+          loader.textContent = "Loading…";
+
+          try {
+            await waitforsw();
+            var p = await startproxy();
+
+            currentframe = mountframe(p, resultarea);
+
+            await currentframe.go(finalurl);
+            lasturl = finalurl;
+
+            var frameel = currentframe.frame || currentframe;
+            var hidden = false;
+            var hide = function() {
+              if (hidden) return;
+              hidden = true;
+              loader.classList.add("hidden");
+            };
+            frameel.addEventListener("load", hide, { once: true });
+            setTimeout(hide, 4000);
+
+          } catch (err) {
+            console.error("navigation error:", err);
+            errorel.textContent  = "failed to load: " + (err && err.message ? err.message : String(err));
+            errorcode.textContent = err && err.stack ? err.stack : "";
+            loader.classList.add("hidden");
+          }
+        }
+
+        function getframeurl() {
+          if (currentframe) {
+            var el = currentframe.frame || currentframe;
+            try {
+              var href = el.contentWindow && el.contentWindow.location.href;
+              if (href && href !== "about:blank") return href;
+            } catch (_) {}
+          }
+          return lasturl;
+        }
+
+        function toolbarfullscreen() {
+          var area = document.getElementById("result-area");
+          if (area && area.requestFullscreen) area.requestFullscreen();
+        }
+
+        function eschtml(s) {
+          return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+        }
+
+        function toolbarnewtab() {
+          var url = getframeurl();
+          if (!url) { alert("nothing to open yet. search or visit a site first."); return; }
+
+          var newwin = window.open("about:blank", "_blank");
+          if (!newwin) { alert("popup blocked. please allow popups for this site."); return; }
+
+          var tabtitle = localStorage.getItem("tabName") || "Aetheris";
+          var tabicon  = localStorage.getItem("tabIcon") || "./assets/images/icon.png";
+
+          newwin.document.write(
+            '<!DOCTYPE html><html><head>'
+            + '<title>' + eschtml(tabtitle) + '</title>'
+            + '<link rel="icon" href="' + eschtml(tabicon) + '">'
+            + '<style>*{margin:0;padding:0}body{overflow:hidden;background:#000}'
+            + 'iframe{position:fixed;inset:0;width:100%;height:100%;border:none}</style>'
+            + '</head><body>'
+            + '<iframe src="' + eschtml(url) + '" allowfullscreen referrerpolicy="no-referrer"></iframe>'
+            + '</body></html>'
+          );
+          newwin.document.close();
+        }
+
+        function toolbarrefresh() {
+          if (currentframe && lasturl) {
+            currentframe.go(lasturl).catch(function(err) { console.error("refresh failed:", err); });
+          }
+        }
+
+        document.getElementById("sj-form").addEventListener("submit", function(e) {
+          e.preventDefault();
+          gourl(document.getElementById("sj-address").value);
+        });
+
+        var urlparams = new URLSearchParams(window.location.search);
+        var q = urlparams.get("q");
+        if (q) {
+          document.getElementById("sj-address").value = q;
+          gourl(q);
+        }
+
+    </script>
+</body>
+
+</html>

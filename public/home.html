@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="shortcut icon" href="./assets/images/icon.png" type="image/png" />
+    <title>Aetheris</title>
+
+    <link rel="stylesheet" href="./css/main.css?v=3" />
+    <link rel="stylesheet" href="./css/cards.css?v=3" />
+    <link rel="stylesheet" href="./css/themes.css?v=3" />
+    <link rel="stylesheet" href="./css/nav.css?v=3" />
+
+    <meta name="theme-color" content="#3b0a3f" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
+    <script src="register-sw.js" defer></script>
+<script defer src="./js/preload.js"></script>
+
+    <script src="./js/theme.js?v=2"></script>
+    <script src="./js/navigation.js"></script>
+</head>
+
+<body>
+
+    <div class="centered main-home">
+        <h1>welcome to aetheris</h1>
+
+        <div class="dark-search-wrap" style="margin-bottom:10px">
+            <input type="text" id="mainsearch" class="dark-search" placeholder="search anything..." autocomplete="off" />
+        </div>
+
+        <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:16px 0;">
+          <button onclick="openreport()" class="btn play">
+              something broken? tell me
+          </button>
+
+          <button onclick="launchab()" id="launchab" class="btn play">
+              Launch in about:blank
+          </button>
+        </div>
+
+        <div class="footer-links">
+            <a href="./settings.html" class="btn secondary-btn">Settings</a>
+            <a href="./about.html" class="btn secondary-btn">About</a>
+        </div>
+    </div>
+
+    <div class="dark-home">
+        <h1 class="dark-title">Aetheris</h1>
+        <p class="dark-subtitle" id="darksubtitle">nichest site..</p>
+
+        <div class="dark-search-wrap">
+            <input type="text" id="darksearch" class="dark-search" placeholder="search anything..." autocomplete="off" />
+        </div>
+
+        <div class="footer-links" style="margin-top:20px">
+            <a href="./settings.html" class="btn secondary-btn">Settings</a>
+            <a href="./about.html" class="btn secondary-btn">About</a>
+            <a href="#" onclick="event.preventDefault(); openreport();" class="btn secondary-btn">
+        Report
+      </a>
+        </div>
+    </div>
+
+    <div class="online-status" aria-live="polite">
+        <span class="online-dot"></span> online users: <span id="online-count">—</span>
+    </div>
+
+    <div id="updatemodal" class="update-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="updatemodaltitle">
+        <div class="update-modal">
+            <h2 id="updatemodaltitle">whats new</h2>
+            <ul class="update-list">
+                <li>movies and other stuff now work properly, which is a big fix</li>
+                <li>no more Scramjet errors on movie providers</li>
+            </ul>
+            <div class="update-modal-footer">
+                <button id="updatemodalclose">
+                    aight
+                </button>
+            </div>
+        </div>
+    </div>
+
+<a href="https://discord.gg/ehpc6kfTK" target="_blank" class="discord-icon">
+    <img src="assets/images/discord.png" alt="Discord">
+</a>
+
+
+
+    <style>
+        .rtype {
+          background: rgba(255, 255, 255, 0.06);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 8px;
+          color: rgba(240, 232, 255, 0.75);
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 11px;
+          padding: 6px 11px;
+          cursor: pointer;
+          transition: background 0.14s, border-color 0.14s, color 0.14s;
+        }
+        .rtype:hover {
+          background: rgba(168, 85, 247, 0.15);
+          border-color: rgba(168, 85, 247, 0.4);
+          color: #f0e8ff;
+        }
+        .rtype.selected {
+          background: rgba(168, 85, 247, 0.25);
+          border-color: rgba(168, 85, 247, 0.65);
+          color: #f0e8ff;
+        }
+
+        .online-status {
+          position: fixed;
+          bottom: max(12px, env(safe-area-inset-bottom, 12px));
+          left: 50%;
+          transform: translateX(-50%);
+          font-size: 0.85rem;
+          font-weight: 500;
+          color: rgba(255, 255, 255, 0.7);
+          letter-spacing: 0.02em;
+          z-index: 100;
+          pointer-events: none;
+          user-select: none;
+          white-space: nowrap;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          background: rgba(0, 0, 0, 0.4);
+          padding: 6px 14px;
+          border-radius: 999px;
+          backdrop-filter: blur(8px);
+          font-family: monospace;
+        }
+        #online-count {
+          color: #4ade80;
+          font-weight: 700;
+          font-size: 1rem;
+        }
+        .online-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: #4ade80;
+          box-shadow: 0 0 6px #4ade80;
+          animation: pulse-dot 2s ease-in-out infinite;
+          flex-shrink: 0;
+        }
+        @keyframes pulse-dot {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.5; transform: scale(0.9); }
+        }
+
+        .update-modal-backdrop {
+          position: fixed;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.55);
+          display: none;
+          align-items: center;
+          justify-content: center;
+          z-index: 9999;
+        }
+        .update-modal {
+          background: #111827;
+          color: #f9fafb;
+          max-width: 420px;
+          width: 90%;
+          padding: 1.5rem 1.75rem;
+          border-radius: 14px;
+          box-shadow: 0 25px 50px rgba(0, 0, 0, 0.35);
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          animation: modal-in 0.2s ease-out;
+        }
+        .update-modal h2 { font-size: 1.25rem; margin-bottom: 0.5rem; }
+        .update-modal p { margin-bottom: 0.75rem; font-size: 0.95rem; opacity: 0.9; }
+        .update-list { margin-bottom: 1rem; padding-left: 1.1rem; font-size: 0.9rem; }
+        .update-list li { margin-bottom: 0.3rem; }
+        .update-modal-footer { display: flex; justify-content: flex-end; }
+        .update-modal button {
+          cursor: pointer; border: none; border-radius: 999px;
+          padding: 0.45rem 1rem; font-size: 0.9rem;
+          background: #6d28d9; color: white;
+          transition: opacity 0.2s;
+        }
+        .update-modal button:hover { opacity: 0.9; }
+
+        @keyframes modal-in {
+          from { transform: scale(0.95); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
+        }
+        @keyframes modal-out {
+          from { opacity: 1; }
+          to { opacity: 0; }
+        }
+        .update-modal-backdrop.fade-out { animation: modal-out 0.25s ease forwards; }
+
+        :root[theme="dark"] .online-status,
+        body[theme="dark"] .online-status {
+          background: rgba(0, 0, 0, 0.6);
+        }
+        :root[theme="dark-blue"] .online-status,
+        body[theme="dark-blue"] .online-status {
+          background: rgba(0, 0, 0, 0.5);
+        }
+
+        /* Report modal */
+        .report-overlay {
+          display: none;
+          position: fixed;
+          inset: 0;
+          z-index: 99999;
+          background: rgba(4, 5, 14, 0.72);
+          backdrop-filter: blur(4px);
+          -webkit-backdrop-filter: blur(4px);
+          align-items: center;
+          justify-content: center;
+        }
+        .report-modal {
+          background: linear-gradient(160deg, rgba(30, 18, 52, 0.98), rgba(18, 10, 36, 0.99));
+          border: 1px solid rgba(255, 168, 224, 0.18);
+          border-radius: 20px;
+          padding: 28px 26px 22px;
+          width: min(460px, 92vw);
+          box-shadow: 0 32px 80px rgba(0, 0, 0, 0.6);
+          font-family: 'JetBrains Mono', monospace;
+          color: #f0e8ff;
+          position: relative;
+        }
+        .report-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 20px;
+        }
+        .report-title-group {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+        .report-flag { font-size: 20px; }
+        .report-title { font-size: 15px; font-weight: 700; letter-spacing: 0.02em; }
+        .report-subtitle { font-size: 11px; opacity: 0.45; margin-top: 2px; }
+        .report-close {
+          background: rgba(255, 255, 255, 0.06);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 8px;
+          color: #f0e8ff;
+          font-size: 16px;
+          width: 32px;
+          height: 32px;
+          cursor: pointer;
+          display: grid;
+          place-items: center;
+          transition: background 0.15s;
+        }
+        .report-close:hover { background: rgba(255, 255, 255, 0.12); }
+        .report-field { margin-bottom: 16px; }
+        .report-field-last { margin-bottom: 20px; }
+        .report-label {
+          font-size: 11px;
+          opacity: 0.55;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          display: block;
+          margin-bottom: 8px;
+        }
+        .report-optional { opacity: 0.4; }
+        .report-types { display: flex; flex-wrap: wrap; gap: 7px; }
+        .report-textarea {
+          width: 100%;
+          min-height: 80px;
+          resize: vertical;
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 10px;
+          color: #f0e8ff;
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 12px;
+          padding: 10px 12px;
+          box-sizing: border-box;
+          outline: none;
+          transition: border-color 0.15s;
+        }
+        .report-textarea:focus { border-color: rgba(168, 85, 247, 0.5); }
+        .report-textarea-short { min-height: 56px; }
+        .report-actions { display: flex; align-items: center; gap: 10px; }
+        .report-btn-submit {
+          flex: 1;
+          background: linear-gradient(110deg, rgba(168, 85, 247, 0.9), rgba(236, 72, 153, 0.85));
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          border-radius: 11px;
+          color: #fff;
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 13px;
+          font-weight: 700;
+          padding: 11px;
+          cursor: pointer;
+          transition: filter 0.15s, transform 0.12s;
+          letter-spacing: 0.02em;
+        }
+        .report-btn-submit:hover { filter: brightness(1.12); }
+        .report-btn-submit:active { transform: scale(0.97); }
+        .report-btn-cancel {
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.09);
+          border-radius: 11px;
+          color: rgba(240, 232, 255, 0.6);
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 13px;
+          padding: 11px 18px;
+          cursor: pointer;
+          transition: background 0.15s;
+        }
+        .report-btn-cancel:hover { background: rgba(255, 255, 255, 0.09); }
+        .report-status {
+          display: none;
+          margin-top: 14px;
+          font-size: 12px;
+          text-align: center;
+          border-radius: 8px;
+          padding: 9px 12px;
+        }
+    </style>
+
+    <script>
+        var UPDATE_VERSION = "8";
+
+        async function loadquote() {
+          try {
+            var cached = sessionStorage.getItem("__quotes");
+            var quotes = cached ? JSON.parse(cached) : null;
+            if (!quotes) {
+              quotes = await fetch("./quotes.json").then(function(r) { return r.json(); });
+              sessionStorage.setItem("__quotes", JSON.stringify(quotes));
+            }
+            if (!quotes.length) return;
+            var el = document.getElementById("darksubtitle");
+            if (el) el.textContent = quotes[Math.floor(Math.random() * quotes.length)];
+          } catch (_) {}
+        }
+
+        function setupsearch() {
+          var inputs = [
+            document.querySelector(".pxyinput"),
+            document.getElementById("darksearch"),
+            document.getElementById("mainsearch"),
+          ].filter(Boolean);
+          inputs.forEach(function(input) {
+            input.addEventListener("keydown", function(e) {
+              if (e.key !== "Enter") return;
+              var q = input.value.trim();
+              if (q) window.location.href = "search.html?q=" + encodeURIComponent(q);
+            });
+          });
+        }
+
+        function showupdatemodal() {
+          var backdrop = document.getElementById("updatemodal");
+          var closebtn = document.getElementById("updatemodalclose");
+          if (!backdrop) return;
+          if (localStorage.getItem("updateDismissed") === UPDATE_VERSION) return;
+
+          var labels = ["aight", "bet", "ok", "cool!", "great!"];
+          if (closebtn) closebtn.textContent = labels[Math.floor(Math.random() * labels.length)];
+
+          backdrop.style.display = "flex";
+
+          function dismiss() {
+            localStorage.setItem("updateDismissed", UPDATE_VERSION);
+            backdrop.classList.add("fade-out");
+            backdrop.addEventListener("animationend", function() {
+              backdrop.style.display = "none";
+              backdrop.classList.remove("fade-out");
+            }, { once: true });
+          }
+
+          closebtn.addEventListener("click", dismiss);
+          backdrop.addEventListener("click", function(e) { if (e.target === backdrop) dismiss(); });
+          function onesc(e) {
+            if (e.key === "Escape" && backdrop.style.display !== "none") {
+              dismiss();
+              document.removeEventListener("keydown", onesc);
+            }
+          }
+          document.addEventListener("keydown", onesc);
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+          loadquote();
+          setupsearch();
+          showupdatemodal();
+        });
+
+        function eschtml(s) {
+          return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+        }
+
+        function launchab() {
+          try {
+            if (window.parent && window.parent !== window && typeof window.parent.launchab === "function") {
+              window.parent.launchab();
+              return;
+            }
+          } catch (_) {}
+
+          var siteurl;
+          try {
+            siteurl = (window.top && window.top.location && window.top.location.href) || window.location.origin + "/";
+          } catch (_) {
+            siteurl = window.location.origin + "/";
+          }
+
+          var opener;
+          try { opener = window.top || window; } catch (_) { opener = window; }
+
+          var win = opener.open("about:blank", "_blank");
+          if (!win) { alert("Popup blocked. Allow popups for this site and try again."); return; }
+
+          try {
+            win.document.open();
+            win.document.write(
+              '<!DOCTYPE html><html><head>' +
+              '<style>body{margin:0;overflow:hidden;background:#000}iframe{border:none;width:100vw;height:100vh;position:fixed;inset:0}</style>' +
+              '</head><body>' +
+              '<iframe src="' + eschtml(siteurl) + '" allowfullscreen referrerpolicy="no-referrer"></iframe>' +
+              '</body></html>'
+            );
+            win.document.close();
+          } catch (err) {
+            try { win.location.href = siteurl; } catch (_) {}
+          }
+        }
+    </script>
+
+    <div id="report-overlay" class="report-overlay">
+        <div id="report-modal" class="report-modal">
+
+            <div class="report-header">
+                <div class="report-title-group">
+                    <span class="report-flag">🚩</span>
+                    <div>
+                        <div class="report-title">report something</div>
+                        <div class="report-subtitle">general feedback</div>
+                    </div>
+                </div>
+                <button onclick="closereport()" class="report-close">&times;</button>
+            </div>
+
+            <div class="report-field">
+                <label class="report-label">whats wrong?</label>
+                <div class="report-types">
+                    <button class="rtype" onclick="pickreporttype(this, 'Site not loading')">Site not loading</button>
+                    <button class="rtype" onclick="pickreporttype(this, 'Broken link or page')">Broken link</button>
+                    <button class="rtype" onclick="pickreporttype(this, 'Visual / layout bug')">Visual bug</button>
+                    <button class="rtype" onclick="pickreporttype(this, 'Search not working')">Search broken</button>
+                    <button class="rtype" onclick="pickreporttype(this, 'Settings not saving')">Settings issue</button>
+                    <button class="rtype" onclick="pickreporttype(this, 'Feature request')">Feature request</button>
+                    <button class="rtype" onclick="pickreporttype(this, 'Suggestion / feedback')">Suggestion</button>
+                    <button class="rtype" onclick="pickreporttype(this, 'Other')">Other</button>
+                </div>
+            </div>
+
+            <div class="report-field">
+                <label class="report-label">what happened</label>
+                <textarea id="report-steps" class="report-textarea" placeholder="e.g. When I click Settings, the page goes blank..."></textarea>
+            </div>
+
+            <div class="report-field report-field-last">
+                <label class="report-label">
+                    anything else? <span class="report-optional">(optional)</span>
+                </label>
+                <textarea id="report-notes" class="report-textarea report-textarea-short" placeholder="Browser, device, anything else we should know..."></textarea>
+            </div>
+
+            <div class="report-actions">
+                <button id="report-submit" onclick="sendreport()" class="report-btn-submit">send it</button>
+                <button onclick="closereport()" class="report-btn-cancel">nah</button>
+            </div>
+
+            <div id="report-status" class="report-status"></div>
+
+        </div>
+    </div>
+
+    <script>
+        async function getdeviceid() {
+          var stored = localStorage.getItem("dmDeviceId");
+          if (stored && /^[a-f0-9]{64}$/.test(stored)) return stored;
+          var hex;
+          if (crypto.getRandomValues) {
+            var bytes = new Uint8Array(32);
+            crypto.getRandomValues(bytes);
+            hex = Array.from(bytes).map(function(b) { return b.toString(16).padStart(2, "0"); }).join("");
+          } else {
+            var raw = [
+              navigator.userAgent, navigator.language, Date.now(), Math.random(),
+              screen.width, screen.height,
+              Intl.DateTimeFormat().resolvedOptions().timeZone,
+            ].join("|");
+            var buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(raw));
+            hex = Array.from(new Uint8Array(buf)).map(function(b) { return b.toString(16).padStart(2, "0"); }).join("");
+          }
+          localStorage.setItem("dmDeviceId", hex);
+          return hex;
+        }
+
+        var reporttype = "";
+
+        function pickreporttype(btn, label) {
+          document.querySelectorAll(".rtype").forEach(function(b) { b.classList.remove("selected"); });
+          btn.classList.add("selected");
+          reporttype = label;
+        }
+
+        function openreport() {
+          reporttype = "";
+          document.querySelectorAll(".rtype").forEach(function(b) { b.classList.remove("selected"); });
+          document.getElementById("report-steps").value = "";
+          document.getElementById("report-notes").value = "";
+          document.getElementById("report-status").style.display = "none";
+          document.getElementById("report-submit").disabled = false;
+          document.getElementById("report-submit").textContent = "send it";
+
+          var overlay = document.getElementById("report-overlay");
+          var modal   = document.getElementById("report-modal");
+          overlay.style.display  = "flex";
+          modal.style.opacity    = "0";
+          modal.style.transform  = "scale(0.92) translateY(12px)";
+          modal.style.transition = "opacity 0.22s ease, transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1)";
+
+          requestAnimationFrame(function() {
+            modal.style.opacity   = "1";
+            modal.style.transform = "scale(1) translateY(0)";
+          });
+        }
+
+        function closereport() {
+          var overlay = document.getElementById("report-overlay");
+          var modal   = document.getElementById("report-modal");
+          modal.style.opacity   = "0";
+          modal.style.transform = "scale(0.92) translateY(8px)";
+          setTimeout(function() { overlay.style.display = "none"; }, 200);
+        }
+
+        document.getElementById("report-overlay").addEventListener("click", function(e) {
+          if (e.target === this) closereport();
+        });
+
+        document.addEventListener("keydown", function(e) {
+          var overlay = document.getElementById("report-overlay");
+          if (e.key === "Escape" && overlay && overlay.style.display === "flex") closereport();
+        });
+
+        async function sendreport() {
+          var steps     = document.getElementById("report-steps").value.trim();
+          var notes     = document.getElementById("report-notes").value.trim();
+          var submitbtn = document.getElementById("report-submit");
+
+          if (!reporttype) { showstatus("pick a type first", "warn"); return; }
+          if (!steps) { showstatus("describe it first", "warn"); return; }
+
+          submitbtn.disabled = true;
+          submitbtn.textContent = "sending...";
+
+          try {
+            var devid = await getdeviceid();
+            var res = await fetch("/api/report", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                game: "Site feedback (home page)",
+                issue: reporttype,
+                steps: steps,
+                notes: notes || undefined,
+                url: window.location.href,
+                deviceId: devid,
+              }),
+            });
+
+            var data = await res.json().catch(function() { return {}; });
+            if (!res.ok) throw new Error(data.error || "HTTP " + res.status);
+
+            showstatus("sent! thanks for the heads up", "ok");
+            submitbtn.textContent = "sent!";
+            setTimeout(closereport, 1800);
+          } catch (err) {
+            showstatus(err.message || "failed to send. try again.", "err");
+            submitbtn.disabled = false;
+            submitbtn.textContent = "send it";
+            console.error("report error:", err);
+          }
+        }
+
+        var STATUS_COLOURS = {
+          ok:   { bg: "rgba(34,197,94,0.15)",  color: "#86efac", border: "rgba(34,197,94,0.3)"  },
+          warn: { bg: "rgba(234,179,8,0.15)",   color: "#fde047", border: "rgba(234,179,8,0.3)"  },
+          err:  { bg: "rgba(239,68,68,0.15)",   color: "#fca5a5", border: "rgba(239,68,68,0.3)"  },
+        };
+
+        function showstatus(message, type) {
+          var el = document.getElementById("report-status");
+          var c  = STATUS_COLOURS[type] || STATUS_COLOURS.err;
+          el.textContent      = message;
+          el.style.display    = "block";
+          el.style.background = c.bg;
+          el.style.color      = c.color;
+          el.style.border     = "1px solid " + c.border;
+        }
+    </script>
+</body>
+</html>

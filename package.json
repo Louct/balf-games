@@ -1,0 +1,37 @@
+{
+	"name": "aetheris",
+	"version": "1.0.0",
+	"description": "The best website.",
+	"type": "module",
+	"engines": {
+		"npm": ">=7.0.0",
+		"node": ">=16.0.0"
+	},
+	"scripts": {
+		"start": "node index.js",
+		"format": "prettier --write .",
+		"lint": "eslint index.js public/",
+		"lint:fix": "eslint index.js public/ --fix"
+	},
+	"keywords": [
+		"proxy"
+	],
+	"author": "Mercury Workshop",
+	"license": "GNU AFFERO",
+	"dependencies": {
+		"@fastify/static": "^9.0.0",
+		"@mercuryworkshop/bare-mux": "^2.1.8",
+		"@mercuryworkshop/epoxy-transport": "^3.0.1",
+		"@mercuryworkshop/libcurl-transport": "^1.5.2",
+		"@mercuryworkshop/scramjet": "^1.1.0",
+		"@mercuryworkshop/wisp-js": "^0.4.1",
+		"fastify": "^5.8.4",
+		"ajv": "^8.12.0",
+		"ws": "^8.20.0"
+	},
+	"devDependencies": {
+		"eslint": "^10.1.0",
+		"prettier": "^3.8.1"
+	},
+	"packageManager": "pnpm@10.32.1"
+}

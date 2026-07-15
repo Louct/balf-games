@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <link rel="shortcut icon" href="./assets/images/icon.png" type="image/png" />
+    <title>Aetheris Cheats</title>
+
+    <link rel="stylesheet" href="./css/main.css?v=3" />
+    <link rel="stylesheet" href="./css/cards.css?v=3" />
+    <link rel="stylesheet" href="./css/themes.css?v=3" />
+    <link rel="stylesheet" href="./css/nav.css?v=3" />
+    <script src="./js/theme.js?v=2"></script>
+
+    <meta name="theme-color" content="#3b0a3f" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
+    <script src="register-sw.js" defer></script>
+    <script src="/scram/scramjet.all.js"></script>
+    <script src="/baremux/index.js"></script>
+<script defer src="./js/preload.js"></script>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <style>
+        .page-wrapper {
+          min-height: 100vh;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+        }
+    
+        .cheats-title {
+          font-size: clamp(2.5rem, 5vw, 3.5rem);
+          font-weight: 800;
+          letter-spacing: 0.05em;
+          text-transform: lowercase;
+          margin-bottom: 6px;
+          text-shadow: 0 0 25px rgba(0, 0, 0, 0.7);
+        }
+    
+        .cheats-subtitle {
+          font-size: 0.95rem;
+          opacity: 0.8;
+          margin-bottom: 32px;
+        }
+    
+        .cheats-grid {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 18px;
+          justify-content: center;
+          margin-bottom: 26px;
+        }
+    
+        .cheat-card {
+          background: rgba(15, 23, 42, 0.9);
+          border-radius: 999px;
+          padding: 14px 28px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          border: 1px solid rgba(148, 163, 184, 0.5);
+          cursor: pointer;
+          color: inherit;
+          min-width: 190px;
+          justify-content: center;
+          transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+          box-shadow: 0 12px 35px rgba(15, 23, 42, 0.7);
+          text-decoration: none;
+        }
+    
+        .cheat-card:hover {
+          transform: translateY(-3px) scale(1.02);
+          background: rgba(15, 23, 42, 0.98);
+          border-color: rgba(46, 40, 43, 0.9);
+          box-shadow: 0 18px 45px rgba(15, 23, 42, 0.9), 0 0 30px rgba(46, 40, 43, 0.9);
+        }
+    
+        .cheat-card span.icon  { font-size: 1.3rem; }
+        .cheat-card span.label { font-size: 0.95rem; font-weight: 500; text-transform: lowercase; letter-spacing: 0.03em; }
+    
+        .hidden { display: none; }
+    
+        .menu-section {
+          width: min(1100px, 92vw);
+          margin: 0 auto;
+        }
+    
+        .menu-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+          gap: 14px;
+        }
+    
+        .menu-item {
+          background: rgba(15, 23, 42, 0.9);
+          border-radius: 18px;
+          border: 1px solid rgba(7, 14, 39, 0.8);
+          cursor: pointer;
+          padding: 10px 10px 12px;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+        }
+    
+        .menu-item:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 14px 30px rgba(15, 23, 42, 0.85), 0 0 24px rgba(33, 41, 54, 0.65);
+          background: rgba(15, 23, 42, 1);
+          border-color: rgba(29, 36, 44, 0.95);
+        }
+    
+        .menu-item-img {
+          width: 100%;
+          border-radius: 14px;
+          aspect-ratio: 2 / 3;
+          background: radial-gradient(circle at top, #1d4ed8, #020617);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 2rem;
+          opacity: 0.75;
+          overflow: hidden;
+        }
+    
+        .menu-item-body    { display: flex; flex-direction: column; gap: 3px; }
+        .menu-item-title   { font-size: 0.95rem; font-weight: 600; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+        .menu-item-meta    { font-size: 0.75rem; opacity: 0.7; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+        .menu-item-tag     { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; padding: 2px 7px; border-radius: 999px; background: rgba(37, 99, 235, 0.2); border: 1px solid rgba(96, 165, 250, 0.9); }
+        .menu-item-note    { font-size: 0.72rem; opacity: 0.6; }
+    </style>
+</head>
+
+<body>
+
+    <div class="page-wrapper">
+        <h1 class="cheats-title">cheats</h1>
+        <p class="cheats-subtitle">choose a game, then pick a method</p>
+
+        <div class="cheats-grid">
+            <div class="cheat-card" onclick="openmenu('kahoot')">
+                <span class="icon">❓</span>
+                <span class="label">kahoot</span>
+            </div>
+            <div class="cheat-card" onclick="openmenu('blooket')">
+                <span class="icon">📦</span>
+                <span class="label">blooket</span>
+            </div>
+        </div>
+
+        <div id="menuSection" class="menu-section hidden">
+            <div id="menuGrid" class="menu-grid"></div>
+        </div>
+    </div>
+
+    <script>
+        var CHEAT_DATA = {
+          kahoot: {
+            items: [
+              {
+                name:  "theres none",
+                emoji: "✅✔️☑️",
+                url:   "",
+                tag:   "website",
+                note:  "."
+              }
+            ]
+          },
+    
+          blooket: {
+            items: [
+              {
+                name:     "AIO GUI bookmark",
+                emoji:    "🧐",
+                copyText: "javascript:(function(){var s=document.createElement('script');s.src='https://aetheris.win/assets/games/blooketcheat.js?'+Date.now();document.body.appendChild(s);})();",
+                tag:      "bookmark",
+                note:     "AIO/All In One Cheat."
+              }
+            ]
+          }
+        };
+    
+        function openmenu(gamekey) {
+          var gamedata = CHEAT_DATA[gamekey];
+          if (!gamedata) return;
+
+          var menusection = document.getElementById("menuSection");
+          var menugrid    = document.getElementById("menuGrid");
+
+          menugrid.innerHTML = "";
+
+          gamedata.items.forEach(function(item) {
+            var card     = document.createElement("div");
+            card.className = "menu-item";
+            card.onclick   = function() { clickcheat(item); };
+
+            card.innerHTML =
+              '<div class="menu-item-img"><span>' + (item.emoji || "🎮") + '</span></div>'
+              + '<div class="menu-item-body">'
+              + '<div class="menu-item-title">' + item.name + '</div>'
+              + '<div class="menu-item-meta">'
+              + (item.tag  ? '<span class="menu-item-tag">' + item.tag + '</span>'   : '<span></span>')
+              + (item.note ? '<span class="menu-item-note">' + item.note + '</span>' : '')
+              + '</div></div>';
+
+            menugrid.appendChild(card);
+          });
+
+          menusection.classList.remove("hidden");
+          menusection.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+
+        function clickcheat(item) {
+          if (item.copyText) { copyclipboard(item.copyText, item.name); return; }
+          if (item.url)      { openinproxy(item.url, item.name);        return; }
+        }
+
+        function eschtml(s) {
+          return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+        }
+
+        var proxyinst = null;
+
+        async function getproxy() {
+          if (proxyinst) return proxyinst;
+
+          var scram = $scramjetLoadController();
+          var ScramjetController = scram.ScramjetController;
+          proxyinst = new ScramjetController({
+            files: {
+              wasm: "/scram/scramjet.wasm.wasm",
+              all:  "/scram/scramjet.all.js",
+              sync: "/scram/scramjet.sync.js",
+            },
+          });
+
+          await proxyinst.init();
+
+          var connection = new BareMux.BareMuxConnection("/baremux/worker.js");
+          await registersw();
+
+          var wispurl = (location.protocol === "https:" ? "wss" : "ws") + "://" + location.host + "/wisp/";
+          var tc = window.__aetherisTransportConfig
+            ? window.__aetherisTransportConfig(wispurl)
+            : { path: "/libcurl/index.mjs", args: [{ websocket: wispurl }] };
+          if ((await connection.getTransport()) !== tc.path) {
+            await connection.setTransport(tc.path, tc.args);
+          }
+
+          return proxyinst;
+        }
+
+        async function openinproxy(url, displayname) {
+          var existing = document.getElementById("cheat-overlay");
+          if (existing) existing.remove();
+
+          var label = eschtml(displayname || url);
+
+          var overlay = document.createElement("div");
+          overlay.id  = "cheat-overlay";
+          overlay.style.cssText = "position:fixed;inset:0;z-index:9999;background:#000;display:flex;flex-direction:column;";
+
+          var topbar = document.createElement("div");
+          topbar.style.cssText = "display:flex;align-items:center;justify-content:space-between;padding:6px 14px;background:rgba(15,23,42,0.95);border-bottom:1px solid rgba(148,163,184,0.2);flex-shrink:0;";
+          topbar.innerHTML =
+            '<span style="font-size:0.85rem;opacity:0.7;">' + label + '</span>'
+            + '<button id="cheat-close-btn" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:inherit;border-radius:6px;padding:4px 12px;cursor:pointer;font-size:0.85rem;">✕ close</button>';
+
+          var contentarea = document.createElement("div");
+          contentarea.id  = "cheat-frame-container";
+          contentarea.style.cssText = "flex:1;width:100%;overflow:hidden;";
+          contentarea.innerHTML = '<div style="color:#aaa;padding:20px;font-size:0.9rem;">Loading ' + label + '…</div>';
+
+          overlay.appendChild(topbar);
+          overlay.appendChild(contentarea);
+          document.body.appendChild(overlay);
+
+          document.getElementById("cheat-close-btn").addEventListener("click", function() { overlay.remove(); });
+
+          try {
+            var p     = await getproxy();
+            var frame = p.createFrame();
+            frame.frame.style.cssText = "width:100%;height:100%;border:0;";
+            contentarea.innerHTML = "";
+            contentarea.appendChild(frame.frame);
+            await frame.go(url);
+          } catch (err) {
+            console.error("proxy load failed:", err);
+            contentarea.innerHTML = '<p style="color:#f87171;padding:20px;">failed to load through proxy: ' + err.message + '</p>';
+          }
+        }
+
+        function copyclipboard(text, itemname) {
+          if (!itemname) itemname = "text";
+
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text)
+              .then(function() {
+                alert('Copied "' + itemname + '" to clipboard!\n\nPaste into a new bookmark (Ctrl+D or right-click bookmark bar → Add page)');
+              })
+              .catch(function(err) {
+                console.error("clipboard api failed:", err);
+                copyfallback(text, itemname);
+              });
+          } else {
+            copyfallback(text, itemname);
+          }
+        }
+
+        function copyfallback(text, itemname) {
+          var textarea = document.createElement("textarea");
+          textarea.value = text;
+          textarea.setAttribute("readonly", "");
+          textarea.style.cssText = "position:fixed;left:-9999px;";
+          document.body.appendChild(textarea);
+          textarea.select();
+          textarea.setSelectionRange(0, 99999);
+
+          try {
+            var worked = document.execCommand("copy");
+            alert(worked
+              ? 'Copied "' + itemname + '" to clipboard! (fallback method)'
+              : "copy failed — please copy manually."
+            );
+          } catch (err) {
+            alert("copy failed — please copy manually.");
+            console.error("fallback copy error:", err);
+          }
+
+          document.body.removeChild(textarea);
+        }
+    </script>
+</body>
+
+</html>

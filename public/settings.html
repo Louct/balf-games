@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="./assets/images/icon.png" type="image/png" />
+    <title>Aetheris</title>
+
+    <link rel="stylesheet" href="./css/main.css?v=3" />
+    <link rel="stylesheet" href="./css/cards.css?v=3" />
+    <link rel="stylesheet" href="./css/themes.css?v=3" />
+    <link rel="stylesheet" href="./css/nav.css?v=3" />
+    <link rel="stylesheet" href="./css/settings.css" />
+    <script src="./js/theme.js?v=2"></script>
+
+    <script src="register-sw.js" defer></script>
+<script defer src="./js/preload.js"></script>
+    <script defer src="./js/settings.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <script src="./js/navigation.js"></script>
+    <script>
+        (function () {
+            window.selectthemecard = function(theme) {
+              localStorage.setItem('aetheris-theme', theme);
+              document.documentElement.setAttribute('theme', theme);
+              if (document.body) document.body.setAttribute('theme', theme);
+              document.querySelectorAll('.theme-card').forEach(function(c) {
+                c.classList.toggle('active', c.dataset.theme === theme);
+              });
+              var sel = document.getElementById('theme-select');
+              if (sel) sel.value = theme;
+              if (window.parent && window.parent !== window) {
+                window.parent.postMessage({ type: 'theme-changed', theme: theme }, location.origin);
+              }
+            };
+
+            document.addEventListener('DOMContentLoaded', function() {
+              var saved = localStorage.getItem('aetheris-theme') || 'main';
+              document.querySelectorAll('.theme-card').forEach(function(c) {
+                c.classList.toggle('active', c.dataset.theme === saved);
+              });
+            });
+          })();
+    </script>
+</head>
+
+<body>
+
+    <div class="center-container">
+        <h1>Settings</h1>
+
+        <div class="settings-tabs">
+            <button class="settings-tab active" onclick="showsection('appearance')">Appearance</button>
+            <button class="settings-tab" onclick="showsection('cloaking')">Cloaking</button>
+            <button class="settings-tab" onclick="showsection('connection')">Connection</button>
+            <button class="settings-tab" onclick="showsection('data')">Data</button>
+        </div>
+
+        <div class="settings-section active" id="section-appearance">
+            <h2>Theme</h2>
+            <h4>Choose how Aetheris looks</h4>
+
+            <div class="theme-cards" id="theme-cards">
+                <button class="theme-card" data-theme="main" onclick="selectthemecard('main')">
+                    <span class="theme-swatch" style="background:linear-gradient(135deg,#7c3aed,#4f1d96)"></span>
+                    <span class="theme-label">Purple</span>
+                </button>
+                <button class="theme-card" data-theme="dark" onclick="selectthemecard('dark')">
+                    <span class="theme-swatch" style="background:linear-gradient(135deg,#2e2e2e,#1a1a1a)"></span>
+                    <span class="theme-label">Charcoal</span>
+                </button>
+                <button class="theme-card" data-theme="dark-blue" onclick="selectthemecard('dark-blue')">
+                    <span class="theme-swatch" style="background:linear-gradient(135deg,#1e3a5f,#0f1f36)"></span>
+                    <span class="theme-label">Dark Blue</span>
+                </button>
+                <button class="theme-card" data-theme="charcoal-gold" onclick="selectthemecard('charcoal-gold')">
+                    <span class="theme-swatch" style="background:linear-gradient(135deg,#2e2e2e,#1a1a1a);outline:1px solid rgba(196,149,92,0.4)"></span>
+                    <span class="theme-label">Charcoal Gold</span>
+                </button>
+            </div>
+
+            <select id="theme-select" style="display:none">
+                <option value="main">Purple</option>
+                <option value="dark">Charcoal</option>
+                <option value="dark-blue">Dark Blue</option>
+                <option value="charcoal-gold">Charcoal Gold</option>
+            </select>
+
+            <h2>On Screen Keyboard</h2>
+            <h4>show a keyboard overlay when playing games, might not work well</h4>
+
+            <div class="toggle-row">
+                <label class="toggle-label" for="osk-toggle">
+                    <span class="toggle-track">
+                        <input type="checkbox" id="osk-toggle" />
+                        <span class="toggle-thumb"></span>
+                    </span>
+                    <span class="toggle-text">enable ze on screen keyboard</span>
+                </label>
+            </div>
+
+            <h2>background image</h2>
+            <h4>upload an image to have a custom background</h4>
+            <div id="bg-preview-wrap" style="display:none;margin:8px auto 14px;width:140px;height:80px;border-radius:10px;overflow:hidden;border:1.5px solid rgba(255,255,255,0.2);box-shadow:0 2px 10px rgba(0,0,0,0.4);">
+                <img id="bg-preview" style="width:100%;height:100%;object-fit:cover;" src="" alt="Background preview" />
+            </div>
+
+            <div class="form-row">
+                <button onclick="document.getElementById('bg-upload').click()" class="secondary">Upload image</button>
+                <button id="bg-remove-btn" onclick="removebg()" class="secondary" style="display:none">Remove</button>
+                <input type="file" id="bg-upload" accept="image/*" style="display:none" onchange="uploadbg(event)" />
+            </div>
+            <div id="bg-status" style="margin-top:8px;font-size:0.88em;opacity:0.7;"></div>
+        </div>
+
+        <div class="settings-section" id="section-cloaking">
+            <h2>Tab Cloaking</h2>
+            <div class="form-row">
+                <input type="text" id="tabname" placeholder="Tab name" />
+                <button onclick="settab()" class="secondary">Set tab name</button>
+            </div>
+
+            <div class="form-row">
+                <input type="text" id="tabicon" placeholder="Tab icon URL" />
+                <button onclick="settab()" class="secondary">Set tab icon</button>
+            </div>
+
+            <div class="tab-presets" aria-label="Tab cloak presets">
+                <button class="secondary" onclick="settabpreset('google')" title="Google">
+                    <img src="assets/images/google.png" alt="Google" />
+                </button>
+                <button class="secondary" onclick="settabpreset('drive')" title="Google Drive">
+                    <img src="https://ssl.gstatic.com/docs/doclist/images/drive_2022q3_32dp.png" alt="Google Drive" />
+                </button>
+                <button class="secondary" onclick="settabpreset('examrevision')" title="Exam Revision">
+                    <img src="https://examrevision.ie/favicon.ico" alt="Exam Revision" />
+                </button>
+                <button class="secondary" onclick="settabpreset('docs')" title="Google Docs">
+                    <img src="https://ssl.gstatic.com/docs/documents/images/kix-favicon7.ico" alt="Google Docs" />
+                </button>
+                <button class="secondary" onclick="settabpreset('classroom')" title="Google Classroom">
+                    <img src="https://ssl.gstatic.com/classroom/ic_product_classroom_32.png" alt="Google Classroom" />
+                </button>
+            </div>
+
+            <h2>Panic Key</h2>
+            <h4>
+                dont pick a key u use alot.
+            </h4>
+            <div class="form-row">
+                <input type="text" id="panickey" placeholder="Panic key" />
+                <button onclick="setpanickey()" class="secondary">set panic key</button>
+            </div>
+
+            <div class="form-row">
+                <input type="text" id="panicurl" placeholder="Panic URL" />
+                <button onclick="setpanicurl()" class="secondary">set panic URL</button>
+            </div>
+
+            <div class="form-row">
+                <button onclick="detectpanic()" id="panickeybtn" class="secondary">
+                    Auto detect panic key
+                </button>
+            </div>
+        </div>
+
+        <div class="settings-section" id="section-connection">
+            <h2>Transport</h2>
+            <h4>Choose the transport for sites and games. Simple enough.</h4>
+
+            <div class="theme-cards" id="transport-cards">
+                <button class="theme-card transport-card" id="transport-libcurl" data-transport="libcurl" onclick="selecttransport('libcurl')">
+                    <span class="transport-header">
+                        <span class="theme-label">libcurl</span>
+                        <span class="transport-tip" data-tip="Cross-browser compatible. Best for Firefox. Reliable on all platforms." onclick="event.stopPropagation()">?</span>
+                    </span>
+                    <span class="theme-swatch" style="background:linear-gradient(135deg,#0ea5e9,#0369a1)"></span>
+                    <span class="transport-sub">Cross Browser / Secure</span>
+                    <span class="transport-compat">Firefox</span>
+                </button>
+                <button class="theme-card transport-card" id="transport-epoxy" data-transport="epoxy" onclick="selecttransport('epoxy')">
+                    <span class="transport-header">
+                        <span class="theme-label">epoxy</span>
+                        <span class="transport-tip" data-tip="Faster than libcurl on Chromium and Apple devices. Uses native TLS via WebAssembly." onclick="event.stopPropagation()">?</span>
+                    </span>
+                    <span class="theme-swatch" style="background:linear-gradient(135deg,#10b981,#065f46)"></span>
+                    <span class="transport-sub">Fastest / Secure</span>
+                    <span class="transport-compat">Chromium or Apple</span>
+                </button>
+            </div>
+            <div id="transport-status" style="margin-top:8px;font-size:0.85em;opacity:0.6;"></div>
+
+            <h2>Performance</h2>
+            <h4>Improve performance on slower devices by disabling effects.</h4>
+
+            <div class="toggle-row">
+                <label class="toggle-label" for="performance-toggle">
+                    <span class="toggle-track">
+                        <input type="checkbox" id="performance-toggle" />
+                        <span class="toggle-thumb"></span>
+                    </span>
+                    <span class="toggle-text">Enable Performance Mode</span>
+                </label>
+            </div>
+
+            <h2>Desktop Mode</h2>
+            <h4>makes the game/site tink ur on a pc</h4>
+
+            <div class="toggle-row">
+                <label class="toggle-label" for="spoof-ua-toggle">
+                    <span class="toggle-track">
+                        <input type="checkbox" id="spoof-ua-toggle" />
+                        <span class="toggle-thumb"></span>
+                    </span>
+                    <span class="toggle-text">Spoof Desktop User Agent</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="settings-section" id="section-data">
+            <h2>Data</h2>
+            <h4>Export or import all your saved data.</h4>
+
+            <div class="form-row">
+                <button onclick="exportdata()" class="secondary">⬇ Export data</button>
+                <button onclick="document.getElementById('import-file').click()" class="secondary">⬆ Import data</button>
+                <input type="file" id="import-file" accept=".json" style="display:none" onchange="importdata(event)" />
+            </div>
+            <div id="data-status" style="margin-top:10px;font-size:0.92em;opacity:0.75;"></div>
+
+            <h2>Cache</h2>
+            <h4>clear cached assets and sw data.</h4>
+            <div class="form-row">
+                <button onclick="resetcache(this)" class="secondary">Reset cache</button>
+            </div>
+        </div>
+
+        <div class="bottom-links" style="justify-content:center;text-align:center;width:100%;">
+            <a href="./about.html" class="button secondary" data-app-nav="about">About</a>
+            <a href="./index.html" class="button secondary" data-app-nav="home">Home</a>
+        </div>
+    </div>
+
+    <script>
+        function resetcache(btn) {
+            btn.disabled = true;
+            btn.textContent = 'Clearing...';
+            var status = document.getElementById('data-status');
+
+            var steps = [];
+
+            if (navigator.serviceWorker) {
+                steps.push(
+                    navigator.serviceWorker.getRegistrations()
+                        .then(function(regs) { return Promise.all(regs.map(function(r) { return r.unregister(); })); })
+                );
+            }
+
+            steps.push(
+                caches.keys().then(function(keys) { return Promise.all(keys.map(function(k) { return caches.delete(k); })); })
+            );
+
+            var dbNames = [];
+            try { dbNames = JSON.parse(localStorage.getItem('idbNames') || '[]'); } catch(_) {}
+            if (dbNames.indexOf('scramjet-config') === -1) dbNames.push('scramjet-config');
+            dbNames.forEach(function(name) {
+                steps.push(new Promise(function(resolve) {
+                    var req = indexedDB.deleteDatabase(name);
+                    req.onsuccess = req.onerror = req.onblocked = function() { resolve(); };
+                    setTimeout(resolve, 2000);
+                }));
+            });
+
+            Promise.all(steps).then(function() {
+                try { localStorage.removeItem('idbNames'); } catch(_) {}
+                btn.textContent = 'Done!';
+                if (status) status.textContent = 'Cache cleared. Reload to re-register the service worker.';
+                setTimeout(function() { window.location.reload(); }, 800);
+            }).catch(function() {
+                btn.textContent = 'Reset cache';
+                btn.disabled = false;
+                if (status) status.textContent = 'Something went wrong. Try clearing browser data manually.';
+            });
+        }
+
+        function showsection(name) {
+            document.querySelectorAll('.settings-section').forEach(function(el) {
+                el.classList.toggle('active', el.id === 'section-' + name);
+            });
+            document.querySelectorAll('.settings-tab').forEach(function(btn, i) {
+                var tabs = ['appearance', 'cloaking', 'connection', 'data'];
+                btn.classList.toggle('active', tabs[i] === name);
+            });
+            try { localStorage.setItem('settingsTab', name); } catch (_) {}
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            var saved = localStorage.getItem('settingsTab');
+            if (saved && document.getElementById('section-' + saved)) {
+                showsection(saved);
+            }
+        });
+    </script>
+</body>
+
+</html>

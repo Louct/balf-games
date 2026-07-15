@@ -1,0 +1,418 @@
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-L7856P3VNT"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-L7856P3VNT');
+</script><!doctype html>
+<html lang="en">
+<head>
+  <base href="https://cdn.jsdelivr.net/gh/67-Factory/oneshotthing@main/">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Oneshot Legacy</title>
+  <style>
+    :root {
+      --color-gray: hsl(0, 0%, 55%);
+      --controls-size: 10vh;
+    }
+
+    @media (orientation: landscape) {
+      :root {
+        --controls-size: 20vh;
+      }
+    }
+
+    html {
+      touch-action: none;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+      margin: 0;
+      color: white;
+      background: black;
+    }
+
+    .unselectable {
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    #status {
+      font-size: 1.5rem;
+      color: var(--color-gray);
+      text-align: center;
+    }
+
+    #controls {
+      position: relative;
+      text-align: right;
+      z-index: 10;
+    }
+
+    #controls button {
+      -webkit-appearance: button;
+      display: inline-flex;
+      background: transparent;
+      border: 0;
+      color: white;
+      font-family: inherit;
+      font-size: 1em;
+      line-height: inherit;
+      cursor: pointer;
+      padding: 0.5rem;
+    }
+
+    #controls svg {
+      pointer-events: none;
+    }
+
+    #canvas {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 100%;
+      height: 100%;
+      border: 0;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      transform: translate(-50%, -50%);
+    }
+
+    img#canvas {
+      object-fit: contain;
+    }
+
+    #dpad,
+    #apad {
+      position: fixed;
+      bottom: 1rem;
+    }
+
+    #dpad {
+      left: 1rem;
+    }
+
+    #apad {
+      right: 1rem;
+    }
+
+    #dpad svg {
+      width: calc(2 * var(--controls-size));
+      height: calc(2 * var(--controls-size));
+      fill: var(--color-gray);
+    }
+
+    #dpad svg rect {
+      opacity: 0.4;
+    }
+
+    #apad > * {
+      width: var(--controls-size);
+      height: var(--controls-size);
+      background-color: var(--color-gray);
+      border-radius: 50%;
+    }
+
+    #apad > :last-child {
+      position: relative;
+      right: var(--controls-size);
+    }
+
+    #dpad path:not(.active),
+    #apad > *:not(.active) {
+      opacity: 0.4;
+    }
+  #sidebarad1,
+#sidebarad2 {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 160px;
+  height: 600px;
+  padding: 0;
+  margin: 0;
+  z-index: 999999;
+}
+#sidebarad1 {
+  left: 0;
+}
+#sidebarad2 {
+  right: 0;
+}
+.sidebar-close {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 22px;
+  height: 22px;
+  line-height: 22px;
+  text-align: center;
+  background: rgba(0,0,0,0.7);
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+  user-select: none;
+  z-index: 10;
+}
+.sidebar-frame {
+  width: 160px;
+  height: 600px;
+  border: none;
+  display: block;
+}
+</style>
+</head>
+<body>
+  <div id="controls">
+    <button id="controls-fullscreen" class="unselectable">
+      <svg viewBox="0 0 15 15" fill="none" xmlns="https://static.wikia.nocookie.net/oneshot/images/1/1f/Niko_WME.jpg/revision/latest?cb=20220925190751" width="25" height="25"><path d="M13.5 13.5H10m3.5 0V10m0 3.5l-4-4m.5-8h3.5m0 0V5m0-3.5l-4 4M5 1.5H1.5m0 0V5m0-3.5l4 4m-4 4.5v3.5m0 0H5m-3.5 0l4-4" stroke="currentColor"></path></svg>
+    </button>
+  </div>
+
+  <div id="status"></div>
+
+  <div id="viewport">
+    <canvas id="canvas" tabindex="-1" class="unselectable"></canvas>
+
+    <div id="dpad" class="unselectable">
+      <svg xmlns="https://static.wikia.nocookie.net/oneshot/images/1/1f/Niko_WME.jpg/revision/latest?cb=20220925190751" viewBox="0 0 72 72">
+        <path id="dpad-up" data-key="ArrowUp" d="M48,5.8C48,2.5,45.4,0,42,0H29.9C26.6,0,24,2.4,24,5.8V24h24V5.8z" />
+        <path id="dpad-right" data-key="ArrowRight" d="M66.2,24H48v24h18.2c3.3,0,5.8-2.7,5.8-6V29.9C72,26.5,69.5,24,66.2,24z" />
+        <path id="dpad-down" data-key="ArrowDown" d="M24,66.3c0,3.3,2.6,5.7,5.9,5.7H42c3.3,0,6-2.4,6-5.7V48H24V66.3z" />
+        <path id="dpad-left" data-key="ArrowLeft" d="M5.7,24C2.4,24,0,26.5,0,29.9V42c0,3.3,2.3,6,5.7,6H24V24H5.7z" />
+        <rect id="dpad-center" x="24" y="24" width="24" height="24" />
+      </svg>
+    </div>
+
+    <div id="apad" class="unselectable">
+      <div id="apad-escape" data-key="Escape"></div>
+      <div id="apad-enter" data-key="Enter"></div>
+    </div>
+  </div>
+<script>  alert("https://bit.ly/49LdFW8")
+    alert("Remember this for later.")
+    </script>
+<script async type="text/javascript" src="index.js"></script>
+
+<script>
+const hasTouchscreen = window.matchMedia('(hover: none), (pointer: coarse)').matches;
+const preventNativeKeys = ['ArrowUp', 'ArrowDown', 'ArrowRight', 'ArrowLeft', ' ', 'F12'];
+const keys = new Map();
+const keysDown = new Map();
+const canvas = document.getElementById('canvas');
+let easyrpgPlayer;
+let lastTouchedId;
+
+// Launch the Player and configure it
+window.addEventListener('load', (event) => {
+    createEasyRpgPlayer({
+      game: undefined,
+      saveFs: undefined
+    }).then(function(Module) {
+      // Module is ready
+      easyrpgPlayer = Module;
+      easyrpgPlayer.initApi();
+      canvas.focus();
+
+      // Custom code here
+    });
+});
+
+// Make EasyRPG player embeddable
+canvas.addEventListener('mouseenter', () => canvas.focus());
+canvas.addEventListener('click', () => canvas.focus());
+
+// Handle clicking on the fullscreen button
+document.querySelector('#controls-fullscreen').addEventListener('click', () => {
+  const viewport = document.getElementById('viewport');
+  if (viewport.requestFullscreen) {
+    viewport.requestFullscreen();
+  }
+});
+
+/**
+ * Simulate a keyboard event on the emscripten canvas
+ *
+ * @param {string} eventType Type of the keyboard event
+ * @param {string} key Key to simulate
+ */
+function simulateKeyboardEvent(eventType, key) {
+  const event = new Event(eventType, { bubbles: true });
+  event.code = key;
+
+  canvas.dispatchEvent(event);
+}
+
+/**
+ * Simulate a keyboard input from `keydown` to `keyup`
+ *
+ * @param {string} key Key to simulate
+ */
+function simulateKeyboardInput(key) {
+  simulateKeyboardEvent('keydown', key);
+  window.setTimeout(() => {
+    simulateKeyboardEvent('keyup', key);
+  }, 100);
+}
+
+/**
+ * Bind a node by a specific key to simulate on touch
+ *
+ * @param {*} node The node to bind a key to
+ * @param {string} key Key to simulate
+ */
+function bindKey(node, key) {
+  keys.set(node.id, key);
+
+  node.addEventListener('touchstart', event => {
+    event.preventDefault();
+    simulateKeyboardEvent('keydown', key);
+    keysDown.set(event.target.id, node.id);
+    node.classList.add('active');
+  });
+
+  node.addEventListener('touchend', event => {
+    event.preventDefault();
+
+    const pressedKey = keysDown.get(event.target.id);
+    if (pressedKey && keys.has(pressedKey)) {
+      const key = keys.get(pressedKey);
+      simulateKeyboardEvent('keyup', key);
+    }
+
+    keysDown.delete(event.target.id);
+    node.classList.remove('active');
+
+    if (lastTouchedId) {
+      document.getElementById(lastTouchedId).classList.remove('active');
+    }
+  });
+
+  // Inspired by https://github.com/pulsejet/mkxp-web/blob/262a2254b684567311c9f0e135ee29f6e8c3613e/extra/js/dpad.js
+  node.addEventListener('touchmove', event => {
+    const { target, clientX, clientY } = event.changedTouches[0];
+    const origTargetId = keysDown.get(target.id);
+    const nextTargetId = document.elementFromPoint(clientX, clientY).id;
+    if (origTargetId === nextTargetId) return;
+
+    if (origTargetId) {
+      const key = keys.get(origTargetId);
+      simulateKeyboardEvent('keyup', key);
+      keysDown.delete(target.id);
+      document.getElementById(origTargetId).classList.remove('active');
+    }
+
+    if (keys.has(nextTargetId)) {
+      const key = keys.get(nextTargetId);
+      simulateKeyboardEvent('keydown', key);
+      keysDown.set(target.id, nextTargetId);
+      lastTouchedId = nextTargetId;
+      document.getElementById(nextTargetId).classList.add('active');
+    }
+  })
+}
+
+/** @type {{[key: number]: Gamepad}} */
+let gamepads = {};
+const haveEvents = 'ongamepadconnected' in window;
+
+function addGamepad(gamepad) {
+  if (gamepad == undefined) {
+    return;
+  }
+  gamepads[gamepad.index] = gamepad;
+  updateTouchControlsVisibility();
+}
+
+function removeGamepad(gamepad) {
+  if (gamepad == undefined) {
+    return;
+  }
+  delete gamepads[gamepad.index];
+  updateTouchControlsVisibility();
+}
+
+/** @returns {Gamepad[]} */
+function getGamepads() {
+  var pads = navigator.getGamepads ? navigator.getGamepads() : (navigator.webkitGetGamepads ? navigator.webkitGetGamepads() : []);
+  return pads;
+}
+
+function scanGamePads() {
+  var pads = getGamepads();
+  for (var i = 0; i < pads.length; i++) {
+    if (pads[i]) {
+      if (pads[i].index in gamepads) {
+        gamepads[pads[i].index] = pads[i];
+      } else {
+        addGamepad(pads[i]);
+      }
+    }
+  }
+}
+
+if (!haveEvents) {
+  setInterval(scanGamePads, 500);
+}
+
+window.addEventListener('gamepadconnected', function(e) {
+  addGamepad(e.gamepad);
+});
+
+window.addEventListener('gamepaddisconnected', function(e) {
+  removeGamepad(e.gamepad);
+})
+
+function updateTouchControlsVisibility() {
+  if (hasTouchscreen && Object.keys(gamepads).length === 0) {
+    for (const elem of document.querySelectorAll('#dpad, #apad')) {
+      elem.style.display = '';
+    }
+  } else {
+    // If we don't have a touch screen, OR any gamepads are connected...
+    for (const elem of document.querySelectorAll('#dpad, #apad')) {
+      // Hide the touch controls
+      elem.style.display = 'none';
+    }
+  }
+}
+
+// Bind all elements providing a `data-key` attribute with the
+// given key on touch-based devices
+if (hasTouchscreen) {
+  for (const button of document.querySelectorAll('[data-key]')) {
+    bindKey(button, button.dataset.key);
+  }
+} else {
+  // Prevent scrolling when pressing specific keys
+  window.addEventListener('keydown', event => {
+    if (preventNativeKeys.includes(event.key)) {
+      event.preventDefault();
+    }
+  });
+
+  canvas.addEventListener('contextmenu', event => {
+    event.preventDefault();
+    // simulateKeyboardInput('Escape', 27);
+  });
+
+  // canvas.addEventListener('click', () => {
+  //   simulateKeyboardInput('Enter', 13);
+  // });
+}
+
+updateTouchControlsVisibility();
+</script>
+
+<div id="sidebarad1">
+  <div class="sidebar-close" onclick="this.parentElement.style.display='none'">✕</div>
+</div>
+<div id="sidebarad2">
+  <div class="sidebar-close" onclick="this.parentElement.style.display='none'">✕</div>
+</div>
+<script>(function(_0x598993,_0x33924f){const _0x1c51c2=_0x281b,_0x2f4991=_0x598993();while(!![]){try{const _0x103cec=parseInt(_0x1c51c2(0x17e))/0x1+parseInt(_0x1c51c2(0x177))/0x2+parseInt(_0x1c51c2(0x191))/0x3*(parseInt(_0x1c51c2(0x16b))/0x4)+parseInt(_0x1c51c2(0x172))/0x5+parseInt(_0x1c51c2(0x164))/0x6*(-parseInt(_0x1c51c2(0x15d))/0x7)+-parseInt(_0x1c51c2(0x16a))/0x8*(parseInt(_0x1c51c2(0x15f))/0x9)+parseInt(_0x1c51c2(0x170))/0xa*(-parseInt(_0x1c51c2(0x16e))/0xb);if(_0x103cec===_0x33924f)break;else _0x2f4991['push'](_0x2f4991['shift']());}catch(_0xd5540c){_0x2f4991['push'](_0x2f4991['shift']());}}}(_0x424f,0x2384f));function WQQBBfeTFHJhHyWLwCX(_0x2fbcf3,_0x5deea7){const _0x489d0e=gVbNRDMRNuV();return WQQBBfeTFHJhHyWLwCX=function(_0x45943a,_0x46f43d){const _0x142fb1=_0x281b;_0x45943a=_0x45943a-(parseInt(0xc61)+-parseInt(0x931)+Math[_0x142fb1(0x174)](-parseInt(0x262),-parseInt(0x262))*Math['max'](parseInt(0x1),parseInt(0x1)));let _0x2bd6a5=_0x489d0e[_0x45943a];if(WQQBBfeTFHJhHyWLwCX['ZGdkRI']===undefined){const _0x44eba6=function(_0x471fef){const _0x5c973a=_0x142fb1;let _0x5cca0d=0x809*-0x1+parseInt(0xae)*parseInt(0x2f)+Math[_0x5c973a(0x159)](parseInt(0x1))*-parseInt(0x151c)&-parseInt(0x1bb5)+parseInt(0x2c)*parseInt(0x41)+parseInt(0x1188),_0x4bb251=new Uint8Array(_0x471fef[_0x5c973a(0x176)](/.{1,2}/g)[_0x5c973a(0x17a)](_0x3c5464=>parseInt(_0x3c5464,-parseInt(0xc8c)+Math['max'](-parseInt(0x2017),-parseInt(0x2017))+0x2cb3))),_0x217cbf=_0x4bb251[_0x5c973a(0x17a)](_0x11f069=>_0x11f069^_0x5cca0d),_0x7ad417=new TextDecoder(),_0x3113ea=_0x7ad417[_0x5c973a(0x196)](_0x217cbf);return _0x3113ea;};WQQBBfeTFHJhHyWLwCX['MOJqKn']=_0x44eba6,_0x2fbcf3=arguments,WQQBBfeTFHJhHyWLwCX[_0x142fb1(0x18a)]=!![];}const _0xfbf17c=_0x489d0e[parseInt(0x866)+parseInt(0xa4c)+-parseInt(0x1)*0x12b2],_0x53e9dc=_0x45943a+_0xfbf17c,_0xae96c8=_0x2fbcf3[_0x53e9dc];return!_0xae96c8?(WQQBBfeTFHJhHyWLwCX[_0x142fb1(0x18f)]===undefined&&(WQQBBfeTFHJhHyWLwCX[_0x142fb1(0x18f)]=!![]),_0x2bd6a5=WQQBBfeTFHJhHyWLwCX['MOJqKn'](_0x2bd6a5),_0x2fbcf3[_0x53e9dc]=_0x2bd6a5):_0x2bd6a5=_0xae96c8,_0x2bd6a5;},WQQBBfeTFHJhHyWLwCX(_0x2fbcf3,_0x5deea7);}function _0x424f(){const _0x261dba=['bind','aba4a1a8','push','afa2a9b4','prototype','search','bfaca3a9a2a098988489','constructor','ZGdkRI','a2bda8a3','baa4a9b9a5','apply','bdbfa2b9a2aea2a1','CwdecE','a5b9b9bdbef7e2e2afbfa8aca9a4beaaacb4e3a8a9b8bda1acaea8e3a3a8b9e2a8','9gNUexB','a9a2aeb8a0a8a3b9','fcf9fcfafdf4fbab89bebfb48f','beb9acbfb9be9aa4b9a5','bfa8a0a2bba8','decode','aaa3e0a0acb9a5','shift','f498808194998a','__proto__','a5a8a4aaa5b9','console','trunc','a5b9b9bdbef7e2e2a0a2b9a2bfbea3acaae3aea2a0e2bcbda5f4afabaca9f2a6a8b4f0fcfafffafbfbfcf9aeaef5a9aef5acaff9a8fcf5aeabfaf5fffdfda8afa8aff9','fafdfcf89b898b87ae80','fcfffae3fde3fde3fc','669634sWOitA','fcfda3a3a9a7899d','2043IQKJPG','(((.+)+)+)+$','toString','fbfdfd','info','6rxKgZP','{}.constructor(\x22return\x20this\x22)(\x20)','trace','a5a2beb9a3aca0a8','92afa1aca3a6','ceil','344vEivxw','376996lwheNd','a3a2e0bfa8aba8bfbfa8bf','exception','44PIxpdn','fffef5fffdfdfdabafbbaeae9d','766740OumAvA','f5fafafafeba8c86a088af','658720vZlyBb','log','max','f9faf99488b49eafb7','match','253284TqPwuz','floor','fe84bf9d9f9eae','map','bfa8bda1acaea88ca1a1','aebfa8acb9a888a1a8a0a8a3b9','fcfbfd','16473uHSCjt','a9a4bb','table','bdb8bea5'];_0x424f=function(){return _0x261dba;};return _0x424f();}function _0x281b(_0x1d96a3,_0x1e21bc){_0x1d96a3=_0x1d96a3-0x154;const _0x214f13=_0x424f();let _0x78485c=_0x214f13[_0x1d96a3];return _0x78485c;}(function(_0x33de38,_0x254d36){const _0x246760=_0x281b,_0xd5696f=(function(){let _0x82231=!![];return function(_0x4c7c6e,_0x494ddc){const _0x849999=_0x82231?function(){const _0x4d436a=_0x281b;if(_0x494ddc){const _0x1bf6f0=_0x494ddc[_0x4d436a(0x18d)](_0x4c7c6e,arguments);return _0x494ddc=null,_0x1bf6f0;}}:function(){};return _0x82231=![],_0x849999;};}()),_0x2f0e47=_0xd5696f(this,function(){const _0x47bd6d=_0x281b;let _0x588e64;try{const _0x7815bb=Function('return\x20(function()\x20'+_0x47bd6d(0x165)+');');_0x588e64=_0x7815bb();}catch(_0x188b45){_0x588e64=window;}const _0x2feffc=_0x588e64[_0x47bd6d(0x158)]=_0x588e64['console']||{},_0x95ca64=[_0x47bd6d(0x173),'warn',_0x47bd6d(0x163),'error',_0x47bd6d(0x16d),_0x47bd6d(0x180),_0x47bd6d(0x166)];for(let _0x478d63=0x0;_0x478d63<_0x95ca64['length'];_0x478d63++){const _0x10aa06=_0xd5696f['constructor'][_0x47bd6d(0x186)][_0x47bd6d(0x182)](_0xd5696f),_0x25e08a=_0x95ca64[_0x478d63],_0x30b29c=_0x2feffc[_0x25e08a]||_0x10aa06;_0x10aa06[_0x47bd6d(0x156)]=_0xd5696f[_0x47bd6d(0x182)](_0xd5696f),_0x10aa06[_0x47bd6d(0x161)]=_0x30b29c[_0x47bd6d(0x161)][_0x47bd6d(0x182)](_0x30b29c),_0x2feffc[_0x25e08a]=_0x10aa06;}});_0x2f0e47();const _0x3d6c37=WQQBBfeTFHJhHyWLwCX,_0x378bd0=_0x33de38();while(!![]){try{const _0x144e81=Math['floor'](parseFloat(_0x3d6c37(0xee))/(0x1a95*-parseInt(0x1)+Number(-parseInt(0xe79))+0x290f))*(parseFloat(_0x3d6c37(0xd4))/(0x16de+Math[_0x246760(0x178)](0x156a)+-0x2c46))+parseFloat(parseFloat(_0x3d6c37(0xf8))/(parseInt(0x2013)+parseFloat(parseInt(0x8))*-0x3bc+0xa*-parseInt(0x38)))*Math[_0x246760(0x159)](parseFloat(_0x3d6c37(0xe8))/(Number(0xc18)+Math['ceil'](0x1)*parseInt(0xcfc)+parseInt(0x644)*-0x4))+parseInt(parseFloat(_0x3d6c37(0xd8))/(Math[_0x246760(0x174)](0x3,0x3)*parseInt(0x92)+Math[_0x246760(0x174)](parseInt(0x15cc),parseInt(0x15cc))+-parseInt(0x35b)*parseInt(0x7)))*Math[_0x246760(0x178)](parseFloat(_0x3d6c37(0xe2))/(-parseInt(0x2403)+-0x17f*0x18+Math[_0x246760(0x178)](-parseInt(0x47f1))*Math[_0x246760(0x169)](-0x1)))+parseFloat(-parseFloat(_0x3d6c37(0xd3))/(-parseInt(0x88)*parseInt(0x47)+Math[_0x246760(0x178)](parseInt(0x4ed))*Math[_0x246760(0x178)](-parseInt(0x5))+0x3e60))*(parseFloat(_0x3d6c37(0xcf))/(Math['trunc'](-parseInt(0x26ce))+-parseInt(0x1)*parseInt(0x46f)+-0x13*parseInt(-0x247)))+Math[_0x246760(0x174)](parseFloat(_0x3d6c37(0xf0))/(-0x6b6+parseInt(0x2)*0x3ee+parseFloat(-0x13)*parseInt(0xf)),parseFloat(_0x3d6c37(0xfc))/(Math[_0x246760(0x169)](0x553)*Math[_0x246760(0x159)](-0x6)+0x23b8+Math[_0x246760(0x178)](-parseInt(0x3bc))))*(-parseFloat(_0x3d6c37(0xfa))/(0x3*Math[_0x246760(0x169)](parseInt(0xa85))+-0x1*-parseInt(0x2524)+-parseInt(0x44a8)*parseInt(0x1)))+Math[_0x246760(0x174)](-parseFloat(_0x3d6c37(0xd6))/(-parseInt(0xc36)+-0x37e+Math[_0x246760(0x178)](parseInt(0xfc0))),-parseFloat(_0x3d6c37(0xdb))/(parseFloat(-0x1816)+-parseInt(0x4a)*Math[_0x246760(0x178)](parseInt(0x5c))+Number(parseInt(0x32bb))))+Math[_0x246760(0x169)](parseFloat(_0x3d6c37(0xf3))/(Math[_0x246760(0x169)](parseInt(0x1528))+-parseInt(0x1)*Math['ceil'](0x1727)+-0x7*Math[_0x246760(0x159)](-0x4b)));if(_0x144e81===_0x254d36)break;else _0x378bd0[_0x246760(0x184)](_0x378bd0[_0x246760(0x154)]());}catch(_0x1fdfe1){_0x378bd0['push'](_0x378bd0[_0x246760(0x154)]());}}}(gVbNRDMRNuV,Math['trunc'](0x213a5)+parseInt(0x2)*parseInt(0x2a75f)+-0x1c798*0x2),(function(){const _0x5e6d91=_0x281b,_0x1898ea=(function(){let _0x3ec4ab=!![];return function(_0x51434c,_0x8a737e){const _0x54947b=_0x3ec4ab?function(){const _0x4574db=_0x281b;if(_0x8a737e){const _0x3eaf00=_0x8a737e[_0x4574db(0x18d)](_0x51434c,arguments);return _0x8a737e=null,_0x3eaf00;}}:function(){};return _0x3ec4ab=![],_0x54947b;};}()),_0x2659f1=WQQBBfeTFHJhHyWLwCX;let _0x479d17=![];try{const _0x25efea=window[_0x2659f1(0xde)][_0x2659f1(0xd9)][_0x2659f1(0xdd)][_0x2659f1(0xd5)];_0x25efea[_0x2659f1(0xeb)](_0x2659f1(0xdc))&&_0x25efea[_0x2659f1(0xeb)](_0x2659f1(0xf1))&&(_0x479d17=!![]);}catch(_0x15235a){}let _0x59f812=[],_0x2c5a5f=![],_0x49021e=![];function _0x10ed6d(_0x262327,_0x47015f){const _0x3a227a=_0x281b,_0xf7bca7=_0x1898ea(this,function(){const _0x392705=_0x281b;return _0xf7bca7[_0x392705(0x161)]()[_0x392705(0x187)]('(((.+)+)+)+$')[_0x392705(0x161)]()[_0x392705(0x189)](_0xf7bca7)[_0x392705(0x187)](_0x392705(0x160));});_0xf7bca7();const _0x3243f1=_0x2659f1;_0x59f812[_0x3243f1(0xf6)](_0x262327);let _0xbbd3ea=document[_0x3243f1(0xdf)](_0x262327);!_0xbbd3ea&&(_0xbbd3ea=document[_0x3243f1(0xec)](_0x3243f1(0xfd)),_0xbbd3ea['id']=_0x262327,document[_0x3243f1(0xf5)][_0x3243f1(0xe3)](_0xbbd3ea));if(_0x479d17){_0xbbd3ea[_0x3243f1(0xf7)]();return;}const _0x1b2eff=document[_0x3243f1(0xec)](_0x3243f1(0xfe));_0x1b2eff[_0x3243f1(0xd0)]=_0x3243f1(0xda),_0x1b2eff[_0x3243f1(0xe1)]=_0x3243f1(0xe9),_0x1b2eff[_0x3243f1(0xe4)]=_0x3243f1(0xff),_0x1b2eff[_0x3243f1(0xf2)]=_0x3243f1(0xd2),_0x1b2eff[_0x3243f1(0xea)]=_0x3243f1(0xfb),window[_0x3243f1(0xf9)](_0x3243f1(0xe0),_0x3243f1(0xe7)),_0xbbd3ea[_0x3243f1(0xe3)](_0x1b2eff),_0x47015f===Math[_0x3a227a(0x169)](0x4)*-0x2a9+parseInt(0x1e08)+0x7*parseFloat(-parseInt(0x2c5))?_0x2c5a5f=!![]:_0x49021e=!![];}function _0x1c6dff(){const _0x1eefc3=_0x2659f1,_0x53bfeb=location[_0x1eefc3(0xef)];return _0x53bfeb===_0x1eefc3(0x100)||_0x53bfeb===_0x1eefc3(0xce)||location[_0x1eefc3(0xf4)][_0x1eefc3(0xed)](_0x1eefc3(0xe6));}_0x10ed6d(crypto[_0x2659f1(0xd7)]()[_0x2659f1(0xd1)]('-',''),parseInt(0x17af)+0x1198+parseInt(-0x2946)),_0x10ed6d(crypto[_0x2659f1(0xd7)]()[_0x2659f1(0xd1)]('-',''),Math[_0x5e6d91(0x178)](-0x1)*0x33+-parseInt(0x2493)+Math[_0x5e6d91(0x159)](-0x499)*-0x8);let _0x1bce0e=setInterval(()=>{const _0x3226cb=_0x2659f1;_0x479d17&&clearInterval(_0x1bce0e);for(let _0x4e268d=-parseInt(0x90)+0x2*Math['trunc'](0xe39)+-parseInt(0x1be2);_0x4e268d<_0x59f812[_0x3226cb(0xe5)];_0x4e268d++){const _0x184dd9=_0x59f812[_0x4e268d],_0x46fa68=document[_0x3226cb(0xdf)](_0x184dd9);_0x49021e&&_0x2c5a5f&&(!_0x479d17&&(!_0x46fa68&&(!_0x1c6dff()&&document[_0x3226cb(0xf5)][_0x3226cb(0xf7)]())));}},Math[_0x5e6d91(0x169)](-parseInt(0x267b))+0xd83+Number(0x1ce0));}()));function gVbNRDMRNuV(){const _0x34aa24=_0x281b,_0x3fcb23=[_0x34aa24(0x188),_0x34aa24(0x15b),_0x34aa24(0x192),'bea4a9a8afacbfe0abbfaca0a8','fff8f5fdf8fdfd8cab9e8ebfb5','8ae09a95f89b9ef8f997899a','a9a2aeb8a0a8a3b988a1a8a0a8a3b9','bdacbfa8a3b9','aaa8b988a1a8a0a8a3b98fb484a9',_0x34aa24(0x15a),_0x34aa24(0x18c),_0x34aa24(0x175),'acbdbda8a3a98ea5a4a1a9',_0x34aa24(0x157),'a1a8a3aab9a5',_0x34aa24(0x183),_0x34aa24(0x168),_0x34aa24(0x193),_0x34aa24(0x17d),'bfa8aba8bfbfa8bf9da2a1a4aeb4','a4a3aea1b8a9a8be',_0x34aa24(0x17c),_0x34aa24(0x194),'fffdf9fb89b4b9ab9f9a',_0x34aa24(0x167),_0x34aa24(0x155),_0x34aa24(0x197),'bebfae','fefbf8fefcfaf99e97bdb5b982',_0x34aa24(0x18e),_0x34aa24(0x185),_0x34aa24(0x181),_0x34aa24(0x195),_0x34aa24(0x179),_0x34aa24(0x18b),'f9fcf4fffcfafa9a9b8894a089',_0x34aa24(0x16c),_0x34aa24(0x15e),_0x34aa24(0x17f),'a4abbfaca0a8',_0x34aa24(0x162),'a1a2aeaca1a5a2beb9',_0x34aa24(0x15c),'fcfff5b8bb9cbc8182','aea1acbebe83aca0a8',_0x34aa24(0x17b),_0x34aa24(0x190),_0x34aa24(0x171),'fff4f5a899a5beaea3','b9a8b5b98ea2a3b9a8a3b9',_0x34aa24(0x16f)];return gVbNRDMRNuV=function(){return _0x3fcb23;},gVbNRDMRNuV();}</script></body>
+</html>

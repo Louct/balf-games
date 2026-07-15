@@ -1,0 +1,298 @@
+{
+	on_demand_tls {
+		ask http://127.0.0.1:9999
+	}
+}
+
+http://127.0.0.1:9999 {
+	respond 200
+}
+
+(region_proxy) {
+	handle_path {args[0]}/* {
+		reverse_proxy {args[1]}:443 {
+			header_up Host {args[1]}
+			header_up Origin https://{args[2]}
+			header_up Referer https://{args[2]}/
+			transport http {
+				tls
+				tls_insecure_skip_verify
+			}
+		}
+	}
+}
+(files_proxy) {
+	handle_path {args[0]}/* {
+		reverse_proxy {args[1]}:443 {
+			header_up Host {args[1]}
+			transport http {
+				tls
+				tls_insecure_skip_verify
+			}
+		}
+	}
+}
+(root_proxy) {
+	handle_path {args[0]}/* {
+		reverse_proxy {args[1]}:443 {
+			header_up Host {args[1]}
+			header_up X-Real-IP {remote_host}
+			transport http {
+				tls
+				tls_insecure_skip_verify
+			}
+		}
+	}
+}
+(movie_proxy) {
+	handle_path {args[0]}/* {
+		reverse_proxy {args[1]}:443 {
+			header_up Host {args[1]}
+			header_up Origin https://{args[1]}
+			header_up Referer https://{args[1]}/
+			header_down -X-Frame-Options
+			header_down -Content-Security-Policy
+			header_down -Content-Security-Policy-Report-Only
+			header_down -Cross-Origin-Embedder-Policy
+			header_down -Cross-Origin-Opener-Policy
+			header_down -Cross-Origin-Resource-Policy
+			transport http {
+				tls
+				tls_insecure_skip_verify
+			}
+		}
+	}
+}
+(veck_init) {
+	handle_path /proxy/{args[0]}/api/init {
+		header Content-Type application/json
+		respond `{"region":"{args[1]}"}` 200
+	}
+}
+(veck_join) {
+	@join_{args[0]} path_regexp join_{args[0]} "^/proxy/{args[1]}/matchmake/joinById/(.+)$"
+	handle @join_{args[0]} {
+		rewrite * /api/coly-matchmaker/join-by-id/{re.join_{args[0]}.1}
+		reverse_proxy {args[2]}:443 {
+			header_up Host {args[2]}
+			header_up Origin https://aetheris.win
+			header_up Referer https://aetheris.win/
+			transport http {
+				tls
+				tls_insecure_skip_verify
+			}
+		}
+	}
+}
+
+https:// {
+	tls {
+		on_demand
+	}
+
+	# CORS Preflight
+	@cors_preflight method OPTIONS
+	handle @cors_preflight {
+		header Access-Control-Allow-Origin "*"
+		header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS, HEAD"
+		header Access-Control-Allow-Headers "Content-Type, Authorization, Origin, Accept, X-Requested-With"
+		header Access-Control-Max-Age "3600"
+		respond 204
+	}
+
+	# crax.lol profile site
+	@crax host crax.lol
+	handle @crax {
+		handle /api/* {
+			reverse_proxy http://127.0.0.1:3001
+		}
+		handle {
+			root * /var/www/profile
+			header Cache-Control "no-store"
+			file_server
+		}
+	}
+
+	# hosting.crax.lol file server
+	@hosting host hosting.crax.lol
+	handle @hosting {
+		root * /var/www/hosting
+		file_server browse
+	}
+
+	# WebSocket proxy
+	@wsproxy path_regexp wsproxy ^/(wsproxy|tsunamis/wsproxy)/(([^/]+\.)?(veck\.io|growden\.io|tsunamis\.io|stealnow\.io|luckyblocks\.io|2v2\.io))(/.*)$
+	handle @wsproxy {
+		rewrite * {re.wsproxy.5}
+		reverse_proxy {re.wsproxy.2}:443 {
+			header_up Host {re.wsproxy.2}
+			header_up Origin https://{re.wsproxy.4}
+			transport http {
+				tls
+				tls_insecure_skip_verify
+			}
+		}
+	}
+
+	# 1games.io API
+	handle_path /api-proxy/* {
+		reverse_proxy api.1games.io:443 {
+			header_up Host api.1games.io
+			header_up Origin https://dashmetry.1games.io
+			header_up Referer https://dashmetry.1games.io/
+			transport http {
+				tls
+				tls_insecure_skip_verify
+			}
+		}
+	}
+
+	# -- 2v2.io -------------------------------------------------
+	import files_proxy /proxy/2v2/files files.2v2.io
+	import region_proxy /proxy/2v2/asia-1 asia-1.2v2.io 2v2.io
+	import region_proxy /proxy/2v2/fra-1 fra-1.2v2.io 2v2.io
+	import region_proxy /proxy/2v2/fra-2 fra-2.2v2.io 2v2.io
+	import region_proxy /proxy/2v2/usa-1 usa-1.2v2.io 2v2.io
+	import region_proxy /proxy/2v2/usa-2 usa-2.2v2.io 2v2.io
+	import region_proxy /proxy/2v2/usa-3 usa-3.2v2.io 2v2.io
+	import region_proxy /proxy/2v2/usa-4 usa-4.2v2.io 2v2.io
+	import root_proxy /proxy/2v2 2v2.io
+
+	# -- luckyblocks.io -----------------------------------------
+	import files_proxy /proxy/luckyblocks/files files.luckyblocks.io
+	import region_proxy /proxy/luckyblocks/usa-1 usa-1.luckyblocks.io luckyblocks.io
+	import region_proxy /proxy/luckyblocks/usa-2 usa-2.luckyblocks.io luckyblocks.io
+	import root_proxy /proxy/luckyblocks luckyblocks.io
+
+	# StealNow
+	handle_path /proxy/stealnow-auth/* {
+		rewrite * /api/accounts/login/legion
+		reverse_proxy usa-1.stealnow.io:443 {
+			header_up Host usa-1.stealnow.io
+			header_up Origin https://stealnow.io
+			header_up Referer https://stealnow.io/
+			transport http {
+				tls
+				tls_insecure_skip_verify
+			}
+		}
+	}
+
+	import files_proxy /proxy/stealnow-files files.stealnow.io
+	import region_proxy /proxy/stealnow-usa-1 usa-1.stealnow.io stealnow.io
+	import root_proxy /proxy/stealnow stealnow.io
+
+	# Legion SDK
+	handle_path /proxy/legion-sdk/* {
+		rewrite * /v1/legion-sdk.min.js
+		reverse_proxy sdk.legionsdk.com:443 {
+			header_up Host sdk.legionsdk.com
+			header_down Cache-Control "public, max-age=3600"
+			header_down Content-Type "application/javascript"
+			transport http {
+				tls
+				tls_insecure_skip_verify
+			}
+		}
+	}
+
+	# Growden
+	import files_proxy /proxy/files files.growden.io
+	import region_proxy /proxy/fra-1 fra-1.growden.io growden.io
+	import region_proxy /proxy/fra-2 fra-2.growden.io growden.io
+	import region_proxy /proxy/usa-1 usa-1.growden.io growden.io
+	import region_proxy /proxy/usa-2 usa-2.growden.io growden.io
+	import region_proxy /proxy/usa-3 usa-3.growden.io growden.io
+	import region_proxy /proxy/asia-1 asia-1.growden.io growden.io
+	import region_proxy /proxy/asia-2 asia-2.growden.io growden.io
+	import region_proxy /proxy/fra-3 fra-3.growden.io growden.io
+	import region_proxy /proxy/fra-4 fra-4.growden.io growden.io
+	import region_proxy /proxy/fra-5 fra-5.growden.io growden.io
+	import region_proxy /proxy/usa-4 usa-4.growden.io growden.io
+	import region_proxy /proxy/usa-5 usa-5.growden.io growden.io
+	import region_proxy /proxy/asia-3 asia-3.growden.io growden.io
+	import region_proxy /proxy/asia-4 asia-4.growden.io growden.io
+	import region_proxy /proxy/asia-5 asia-5.growden.io growden.io
+	import region_proxy /proxy/dev-usa-1 dev-usa-1.growden.io growden.io
+	import root_proxy /proxy/growden growden.io
+
+	# Tsunamis
+	import files_proxy /tsunamis/files files.tsunamis.io
+
+	handle_path /tsunamis/api/* {
+		rewrite * /api{http.request.uri.path}
+		reverse_proxy usa-1.tsunamis.io:443 {
+			header_up Host usa-1.tsunamis.io
+			header_up Origin https://tsunamis.io
+			header_up Referer https://tsunamis.io/
+			transport http {
+				tls
+				tls_insecure_skip_verify
+			}
+		}
+	}
+
+	import region_proxy /tsunamis/usa-1 usa-1.tsunamis.io tsunamis.io
+	import region_proxy /tsunamis/usa-2 usa-2.tsunamis.io tsunamis.io
+	import region_proxy /tsunamis/usa-3 usa-3.tsunamis.io tsunamis.io
+
+	# ── Veck init endpoints ──────────────────────────────────────────────────────
+	import veck_init veck-usa-1 USA
+	import veck_init veck-usa-2 USA
+	import veck_init veck-usa-3 USA
+	import veck_init veck-usa-4 USA
+	import veck_init veck-usa-5 USA
+	import veck_init veck-fra-1 EU
+	import veck_init veck-fra-2 EU
+	import veck_init veck-fra-3 EU
+	import veck_init veck-asia-1 ASIA
+	import veck_init veck-asia-2 ASIA
+
+	# ── Veck joinById (must come before catch-all veck-* blocks) ─────────────────
+	import veck_join veck_usa_1 veck-usa-1 usa-1.veck.io
+	import veck_join veck_usa_2 veck-usa-2 usa-2.veck.io
+	import veck_join veck_usa_3 veck-usa-3 usa-3.veck.io
+	import veck_join veck_usa_4 veck-usa-4 usa-4.veck.io
+	import veck_join veck_usa_5 veck-usa-5 usa-5.veck.io
+	import veck_join veck_fra_1 veck-fra-1 fra-1.veck.io
+	import veck_join veck_fra_2 veck-fra-2 fra-2.veck.io
+	import veck_join veck_fra_3 veck-fra-3 fra-3.veck.io
+	import veck_join veck_asia_1 veck-asia-1 asia-1.veck.io
+	import veck_join veck_asia_2 veck-asia-2 asia-2.veck.io
+
+	# ── Veck region handlers ─────────────────────────────────────────────────────
+	import region_proxy /proxy/veck-usa-1 usa-1.veck.io aetheris.win
+	import region_proxy /proxy/veck-usa-2 usa-2.veck.io aetheris.win
+	import region_proxy /proxy/veck-usa-3 usa-3.veck.io aetheris.win
+	import region_proxy /proxy/veck-usa-4 usa-4.veck.io aetheris.win
+	import region_proxy /proxy/veck-usa-5 usa-5.veck.io aetheris.win
+	import region_proxy /proxy/veck-fra-1 fra-1.veck.io aetheris.win
+	import region_proxy /proxy/veck-fra-2 fra-2.veck.io aetheris.win
+	import region_proxy /proxy/veck-fra-3 fra-3.veck.io aetheris.win
+	import region_proxy /proxy/veck-asia-1 asia-1.veck.io aetheris.win
+	import region_proxy /proxy/veck-asia-2 asia-2.veck.io aetheris.win
+	import files_proxy /proxy/veck-files files.veck.io
+	import root_proxy /proxy/veck veck.io
+
+	# -- Movie providers (Caddy proxy, no Scramjet) -----------------------
+	import movie_proxy /proxy/vidsrc vidsrc.to
+	import movie_proxy /proxy/2embed www.2embed.cc
+
+	# Online counter
+	@sse path /online
+	handle @sse {
+		reverse_proxy http://127.0.0.1:8080 {
+			flush_interval -1
+		}
+	}
+
+	@online-count path /online-count
+	handle @online-count {
+		reverse_proxy http://127.0.0.1:8080
+	}
+
+	# Main app
+	handle {
+		reverse_proxy http://127.0.0.1:8080
+	}
+}

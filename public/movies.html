@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="shortcut icon" href="./assets/images/icon.png" type="image/png" />
+    <title>Aetheris - Movies</title>
+
+    <link rel="stylesheet" href="./css/main.css?v=3" />
+    <link rel="stylesheet" href="./css/cards.css?v=3" />
+    <link rel="stylesheet" href="./css/themes.css?v=3" />
+    <link rel="stylesheet" href="./css/nav.css?v=3" />
+    <link rel="stylesheet" href="./css/movies.css" />
+    <script defer src="./js/preload.js"></script>
+    <script src="./js/theme.js?v=2"></script>
+
+</head>
+
+<body>
+    <div class="movies-header">
+        <div class="movies-nav">
+            <div class="movies-title">Movies &amp; TV</div>
+            <div class="mode-btns">
+                <button class="mode-btn active" data-type="all" onclick="setType('all')">All</button>
+                <button class="mode-btn" data-type="movie" onclick="setType('movie')">Movies</button>
+                <button class="mode-btn" data-type="tv" onclick="setType('tv')">TV</button>
+            </div>
+            <div class="search-wrap">
+                <input id="search" type="text" placeholder="Search movies or TV shows..." autocomplete="off" />
+            </div>
+        </div>
+    </div>
+
+    <main>
+        <div class="grid" id="grid"></div>
+        <div class="status-msg" id="status">Loading…</div>
+    </main>
+
+    <div class="modal" id="modal">
+        <div class="modal-box">
+            <div class="modal-top">
+                <div class="modal-title" id="modalTitle">Loading...</div>
+                <select class="source-sel" id="sourceSel" onchange="localStorage.setItem('movieSourceIdx', this.value); setIframe()"></select>
+                <span class="modal-close" id="modalClose">✕</span>
+            </div>
+            <div class="ep-bar" id="epBar">
+                <label>Season</label>
+                <select id="seasonSel" onchange="loadSeason()"></select>
+                <label>Episode</label>
+                <div class="ep-btns" id="epBtns"></div>
+            </div>
+            <div class="player-wrap">
+                <iframe id="player" allowfullscreen allow="autoplay; fullscreen; encrypted-media" ></iframe>
+                <div class="player-status hidden" id="playerStatus">Loading provider…</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var TMDB_KEY = "2713804610e1e236b1cf44bfac3a7776";
+        var TMDB_IMG = "https://image.tmdb.org/t/p/w342";
+        var TMDB_API = "https://api.themoviedb.org/3";
+
+        var MOVIES_SOURCES = [
+            { name: "VidSrc",  url: function(t,id,s,e) { return "/proxy/vidsrc/embed/" + t + "/" + id + (t==="tv" ? "/"+s+"/"+e : ""); } },
+            { name: "2Embed",  url: function(t,id,s,e) { return t==="movie" ? "/proxy/2embed/embed/"+id : "/proxy/2embed/embedtv/"+id+"&s="+s+"&e="+e; } },
+        ];
+
+        var grid = document.getElementById("grid");
+        var statusEl = document.getElementById("status");
+        var modal = document.getElementById("modal");
+        var player = document.getElementById("player");
+        var playerStatus = document.getElementById("playerStatus");
+        var sourceSel = document.getElementById("sourceSel");
+        var modalTitle = document.getElementById("modalTitle");
+        var epBar = document.getElementById("epBar");
+        var seasonSel = document.getElementById("seasonSel");
+        var epBtns = document.getElementById("epBtns");
+        var searchInput = document.getElementById("search");
+
+        var trendingCache = [];
+        var trendingPage = 1;
+        var trendingHasMore = true;
+        var searchCache = [];
+        var searchPage = 1;
+        var searchHasMore = true;
+        var currentMode = "trending";
+        var currentItem = null;
+        var currentType = "all";
+        var currentEp = null;
+        var searchTimer = null;
+        var isLoadingMore = false;
+
+        function setType(type) {
+            currentType = type;
+            document.querySelectorAll(".mode-btn").forEach(function(b) { b.classList.toggle("active", b.dataset.type === type); });
+            if (searchInput.value.trim()) doSearch();
+            else renderGrid(filterByType(trendingCache), trendingHasMore);
+        }
+
+        function filterByType(list) {
+            if (currentType === "all") return list;
+            return list.filter(function(m) { return (m.media_type || (m.title ? "movie" : "tv")) === currentType; });
+        }
+
+        async function loadTrending(append) {
+            currentMode = "trending";
+            if (!append) {
+                trendingPage = 1;
+                trendingCache = [];
+                trendingHasMore = true;
+                statusEl.textContent = "Loading…";
+            }
+            try {
+                var res = await fetch(TMDB_API + "/trending/all/week?api_key=" + TMDB_KEY + "&page=" + trendingPage);
+                if (!res.ok) throw new Error("HTTP " + res.status);
+                var data = await res.json();
+                var newItems = (data.results || []).filter(function(m) { return m.poster_path && m.media_type !== "person"; });
+                trendingCache = trendingCache.concat(newItems);
+                trendingHasMore = trendingPage < (data.total_pages || 1);
+                trendingPage++;
+                renderGrid(filterByType(trendingCache), trendingHasMore);
+                statusEl.textContent = "";
+            } catch (e) {
+                console.warn("[movies] trending failed:", e);
+                if (!append) statusEl.textContent = "Failed to load. Check your connection.";
+            }
+        }
+
+        async function doSearch(append) {
+            var q = searchInput.value.trim();
+            if (!q) return loadTrending();
+            currentMode = "search";
+            if (!append) {
+                searchPage = 1;
+                searchCache = [];
+                searchHasMore = true;
+                statusEl.textContent = "Searching…";
+            }
+            try {
+                var type = currentType === "all" ? "multi" : currentType;
+                var res = await fetch(TMDB_API + "/search/" + type + "?api_key=" + TMDB_KEY + "&query=" + encodeURIComponent(q) + "&page=" + searchPage);
+                if (!res.ok) throw new Error("HTTP " + res.status);
+                var data = await res.json();
+                var list = (data.results || []).filter(function(m) { return m.poster_path && m.media_type !== "person"; });
+                searchCache = searchCache.concat(list);
+                searchHasMore = searchPage < (data.total_pages || 1);
+                searchPage++;
+                renderGrid(searchCache, searchHasMore);
+                statusEl.textContent = searchCache.length === 0 ? "No results found." : "";
+            } catch (e) {
+                if (!append) statusEl.textContent = "Search failed.";
+            }
+        }
+
+        async function loadMore() {
+            if (isLoadingMore) return;
+            isLoadingMore = true;
+            var btn = grid.querySelector(".load-more");
+            if (btn) {
+                btn.classList.add("loading");
+                btn.textContent = "Loading…";
+            }
+            try {
+                if (currentMode === "search") await doSearch(true);
+                else await loadTrending(true);
+            } finally {
+                isLoadingMore = false;
+            }
+        }
+
+        function renderGrid(list, hasMore) {
+            grid.innerHTML = "";
+            if (!list || list.length === 0) {
+                statusEl.textContent = "No results.";
+                return;
+            }
+            var frag = document.createDocumentFragment();
+            list.forEach(function(m) {
+                var title = m.title || m.name || "Untitled";
+                var year = (m.release_date || m.first_air_date || "").slice(0, 4);
+                var type = m.media_type || (m.title ? "movie" : "tv");
+                var rating = m.vote_average ? m.vote_average.toFixed(1) : "N/A";
+
+                var card = document.createElement("div");
+                card.className = "card";
+                card.innerHTML =
+                    '<img src="' + TMDB_IMG + m.poster_path + '" alt="" loading="lazy" onerror="this.style.display=\'none\'">' +
+                    (type === "tv" ? '<span class="card-badge">TV</span>' : '') +
+                    '<div class="info">' +
+                        '<div class="card-title">' + escapeHtml(title) + '</div>' +
+                        '<div class="card-meta">' + (year || "—") + ' · ' + rating + '/10</div>' +
+                    '</div>';
+                card.addEventListener("click", function() { openPlayer(m.id, type, title, year, rating); });
+                frag.appendChild(card);
+            });
+            if (hasMore) {
+                var more = document.createElement("div");
+                more.className = "load-more";
+                more.textContent = "Load More";
+                more.addEventListener("click", loadMore);
+                frag.appendChild(more);
+            }
+            grid.appendChild(frag);
+        }
+
+        function escapeHtml(s) {
+            var d = document.createElement("div");
+            d.textContent = s;
+            return d.innerHTML;
+        }
+
+        async function openPlayer(id, type, title, year, rating) {
+            currentItem = { id, type, title };
+            currentEp = null;
+            modal.classList.add("open");
+
+            // Populate source selector, restoring last-used choice
+            sourceSel.innerHTML = MOVIES_SOURCES
+                .map(function(s, i) { return '<option value="' + i + '">' + s.name + '</option>'; })
+                .join("");
+            var savedIdx = parseInt(localStorage.getItem("movieSourceIdx") || "-1");
+            if (savedIdx >= 0 && savedIdx < MOVIES_SOURCES.length) {
+                sourceSel.value = String(savedIdx);
+            } else {
+                var defaultIdx = MOVIES_SOURCES.findIndex(function(s) { return s.name === "VidSrc"; });
+                if (defaultIdx >= 0) sourceSel.value = String(defaultIdx);
+            }
+
+            modalTitle.innerHTML = escapeHtml(title) + '<small>' + (year || "") + (rating ? " · " + rating + "/10" : "") + '</small>';
+
+            if (type === "tv") {
+                epBar.classList.add("visible");
+                await loadTvDetails(id);
+            } else {
+                epBar.classList.remove("visible");
+                setIframe();
+            }
+        }
+
+        async function loadTvDetails(id) {
+            seasonSel.innerHTML = "";
+            epBtns.innerHTML = '<span style="color:rgba(255,255,255,0.4);font-size:0.8rem">Loading…</span>';
+            var totalSeasons = 1;
+            try {
+                var res = await fetch(TMDB_API + "/tv/" + id + "?api_key=" + TMDB_KEY);
+                var data = await res.json();
+                totalSeasons = data.number_of_seasons || 1;
+            } catch (_) {}
+
+            for (var s = 1; s <= totalSeasons; s++) {
+                var opt = document.createElement("option");
+                opt.value = s;
+                opt.textContent = "Season " + s;
+                seasonSel.appendChild(opt);
+            }
+            await loadSeason();
+        }
+
+        async function loadSeason() {
+            if (!currentItem) return;
+            var season = parseInt(seasonSel.value) || 1;
+            epBtns.innerHTML = '<span style="color:rgba(255,255,255,0.4);font-size:0.8rem">Loading…</span>';
+            try {
+                var res = await fetch(TMDB_API + "/tv/" + currentItem.id + "/season/" + season + "?api_key=" + TMDB_KEY);
+                var data = await res.json();
+                var eps = data.episodes || [];
+                epBtns.innerHTML = "";
+                eps.forEach(function(ep) {
+                    var btn = document.createElement("button");
+                    btn.className = "ep-btn";
+                    btn.textContent = ep.episode_number;
+                    btn.title = ep.name || ("Episode " + ep.episode_number);
+                    btn.addEventListener("click", function() { pickEp(season, ep.episode_number, btn); });
+                    epBtns.appendChild(btn);
+                });
+                if (eps.length > 0) {
+                    pickEp(season, eps[0].episode_number, epBtns.querySelector(".ep-btn"));
+                }
+            } catch (e) {
+                epBtns.innerHTML = '<span style="color:rgba(255,255,255,0.4);font-size:0.8rem">Failed to load episodes</span>';
+            }
+        }
+
+        function pickEp(season, episode, btnEl) {
+            document.querySelectorAll(".ep-btn").forEach(function(b) { b.classList.remove("active"); });
+            if (btnEl) btnEl.classList.add("active");
+            currentEp = { season, episode };
+            setIframe();
+        }
+
+        async function setIframe() {
+            if (!currentItem) return;
+            var idx = parseInt(sourceSel.value) || 0;
+            var src = MOVIES_SOURCES[idx];
+            var t = currentItem.type;
+            var id = currentItem.id;
+            var s = currentEp ? currentEp.season : 1;
+            var e = currentEp ? currentEp.episode : 1;
+            var proxyUrl = src.url(t, id, s, e);
+
+            playerStatus.textContent = "Loading provider…";
+            playerStatus.classList.remove("hidden");
+
+            player.onload = function() {
+                playerStatus.classList.add("hidden");
+            };
+            player.src = proxyUrl;
+        }
+
+        function closeModal() {
+            modal.classList.remove("open");
+            player.src = "";
+            currentItem = null;
+            currentEp = null;
+        }
+
+        document.getElementById("modalClose").addEventListener("click", closeModal);
+        modal.addEventListener("click", function(e) { if (e.target === modal) closeModal(); });
+        document.addEventListener("keydown", function(e) {
+            if (e.key === "Escape" && modal.classList.contains("open")) closeModal();
+        });
+
+        searchInput.addEventListener("input", function() {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(doSearch, 350);
+        });
+
+        loadTrending();
+    </script>
+</body>
+</html>

@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Aetheris</title>
+    <link rel="shortcut icon" href="./assets/images/icon.png" type="image/png" />
+
+    <script>
+        (function() {
+            var title = localStorage.getItem('tabName');
+            var icon  = localStorage.getItem('tabIcon');
+            if (title) document.title = title;
+            if (icon) {
+              var link = document.querySelector('link[rel*="icon"]');
+              if (!link) { link = document.createElement('link'); link.rel = 'icon'; document.head.appendChild(link); }
+              link.href = icon;
+            }
+
+            if (localStorage.getItem('performanceMode') === 'true') {
+              document.documentElement.classList.add('power-saving');
+            }
+            if (navigator.deviceMemory && navigator.deviceMemory <= 2) {
+              document.documentElement.classList.add('power-saving');
+            }
+          })();
+
+          (function() {
+            var THEME_KEY = "aetheris-theme";
+            var validthemes = { "main": 1, "dark": 1, "charcoal-gold": 1, "dark-blue": 1 };
+
+            if (!localStorage.getItem(THEME_KEY) && localStorage.getItem("theme")) {
+              localStorage.setItem(THEME_KEY, localStorage.getItem("theme"));
+              localStorage.removeItem("theme");
+            }
+            var t = localStorage.getItem(THEME_KEY) || "main";
+            if (t === "dark blue")     { t = "dark-blue";     localStorage.setItem(THEME_KEY, t); }
+            if (t === "charcoal gold") { t = "charcoal-gold"; localStorage.setItem(THEME_KEY, t); }
+            if (!validthemes[t]) { t = "main"; localStorage.setItem(THEME_KEY, t); }
+
+            document.documentElement.setAttribute("theme", t);
+            document.addEventListener("DOMContentLoaded", function() {
+              document.body.setAttribute("theme", t);
+            }, { once: true });
+
+            function applythemeearly(theme) {
+              document.documentElement.setAttribute("theme", theme);
+              if (document.body) document.body.setAttribute("theme", theme);
+            }
+
+            window.addEventListener("message", function(e) {
+              if (e.origin !== location.origin) return;
+              var mf = document.getElementById("mainframe");
+              if (mf && e.source !== mf.contentWindow) return;
+              if (e.data && e.data.type === "theme-changed" && e.data.theme && validthemes[e.data.theme]) {
+                localStorage.setItem(THEME_KEY, e.data.theme);
+                applythemeearly(e.data.theme);
+              }
+            });
+          })();
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;900&family=JetBrains+Mono:wght@300;400&display=swap" />
+    <link rel="stylesheet" href="./css/cards.css?v=3" />
+    <link rel="stylesheet" href="./css/themes.css?v=3" />
+    <link rel="stylesheet" href="./css/nav.css?v=3" />
+    <link rel="stylesheet" href="./css/main.css?v=3" />
+    <script src="register-sw.js" defer></script>
+    <script src="/scram/scramjet.all.js" defer></script>
+    <script src="/baremux/index.js" defer></script>
+
+    <script>
+        (function() {
+          var REFRESH_KEY = "__bareMuxRefreshedAt";
+
+          function isbaremuxerr(args) {
+            for (var i = 0; i < args.length; i++) {
+              var v = args[i];
+              var s = (v && v.message) ? v.message : (typeof v === "string" ? v : "");
+              if (s && /bare-mux/i.test(s) && /SharedWorker|MessagePort/i.test(s)) return true;
+            }
+            return false;
+          }
+
+          function mayberefresh() {
+            var last = parseInt(sessionStorage.getItem(REFRESH_KEY) || "0", 10);
+            if (Date.now() - last < 10000) return;
+            sessionStorage.setItem(REFRESH_KEY, String(Date.now()));
+            location.reload();
+          }
+
+          window.addEventListener("error", function(ev) {
+            if (isbaremuxerr([ev.message, ev.error])) mayberefresh();
+          });
+          window.addEventListener("unhandledrejection", function(ev) {
+            if (isbaremuxerr([ev.reason])) mayberefresh();
+          });
+        })();
+    </script>
+
+    <script>
+        window.__aetherisTransportConfig = function(wispurl) {
+          var ua = navigator.userAgent;
+          var isapple = /iP(hone|ad|od)/.test(ua) ||
+            /Macintosh/.test(ua) ||
+            (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+          var preferred = localStorage.getItem("proxyTransport") || (isapple ? "epoxy" : "libcurl");
+          if (preferred === "epoxy") return { path: "/epoxy/index.mjs", args: [{ wisp: wispurl }] };
+          return { path: "/libcurl/index.mjs", args: [{ websocket: wispurl }] };
+        };
+    </script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function earlyinit() {
+          if (typeof BareMux === "undefined") {
+            console.warn("[init] BareMux not loaded yet, skipping");
+            return;
+          }
+
+          try {
+            var wispurl =
+              (location.protocol === "https:" ? "wss" : "ws") +
+              "://" + location.host + "/wisp/";
+
+            var conn = new BareMux.BareMuxConnection("/baremux/worker.js");
+
+            var tc = window.__aetherisTransportConfig(wispurl);
+            conn.getTransport().then(function(current) {
+              if (current !== tc.path) {
+                conn.setTransport(tc.path, tc.args)
+                  .catch(function(err) { console.error("[init] setTransport failed:", err); });
+              }
+            }).catch(function(err) { console.error("[init] BareMux init failed:", err); });
+
+            window.__aetherisBareMux = conn;
+          } catch (err) {
+            console.error("[init] BareMux init failed:", err);
+          }
+
+          try {
+            if (typeof $scramjetLoadController === "function") {
+              var scram = $scramjetLoadController();
+              var ScramjetController = scram.ScramjetController;
+              var scramjet = new ScramjetController({
+                files: {
+                  wasm: "/scram/scramjet.wasm.wasm",
+                  all:  "/scram/scramjet.all.js",
+                  sync: "/scram/scramjet.sync.js",
+                },
+              });
+
+              function initsj() {
+                scramjet.init().then(function() {
+                  window.__aetherisScramjet = scramjet;
+                  var t = document.getElementById("sj-toast");
+                  if (t) {
+                    t.classList.add("show");
+                    setTimeout(function() { t.classList.remove("show"); }, 3000);
+                  }
+                }).catch(function(err) {
+                  console.error("[init] Scramjet init failed:", err);
+                });
+              }
+
+              try {
+                var idbcheck = indexedDB.open('scramjet');
+                idbcheck.onsuccess = function(e) {
+                  var db = e.target.result;
+                  var ok = db.objectStoreNames.contains('config');
+                  db.close();
+                  if (ok) { initsj(); return; }
+                  // 'config' store missing — delete the broken DB then init fresh
+                  var del = indexedDB.deleteDatabase('scramjet');
+                  del.onsuccess = del.onerror = function() { initsj(); };
+                };
+                idbcheck.onerror = function() { initsj(); };
+              } catch (_) { initsj(); }
+            }
+          } catch (err) {
+            console.error("[init] Scramjet init failed:", err);
+          }
+        }, { once: true });
+    </script>
+
+    <meta name="theme-color" content="#3b0a3f" />
+    <script>
+      (function() {
+        var themeColors = { "main": "#3b0a3f", "dark": "#0f0f0f", "charcoal-gold": "#0f0f0f", "dark-blue": "#020617" };
+        function updatethemecolor(t) {
+          var meta = document.querySelector('meta[name="theme-color"]');
+          if (meta && themeColors[t]) meta.content = themeColors[t];
+        }
+        var t = document.documentElement.getAttribute("theme") || localStorage.getItem("aetheris-theme") || "main";
+        updatethemecolor(t);
+        window.addEventListener("message", function(e) {
+          if (e.origin !== location.origin) return;
+          if (e.data && e.data.type === "theme-changed" && e.data.theme) updatethemecolor(e.data.theme);
+        });
+      })();
+    </script>
+
+    <style>
+        body:focus, #mainframe:focus, iframe:focus, canvas:focus,
+        label:focus, label:active, input[type="checkbox"]:focus {
+          outline: none;
+          box-shadow: none;
+        }
+
+        html, body {
+          margin: 0;
+          padding: 0;
+          width: 100%;
+          height: 100%;
+          overflow: hidden;
+        }
+
+        body {
+          background: #0a0a0f !important;
+          background-image: none !important;
+        }
+
+        body::before {
+          display: none !important;
+          background: none !important;
+          animation: none !important;
+        }
+
+        body, canvas, .sitewrap, #mainframe {
+          outline: none;
+          border: none;
+          margin: 0;
+          padding: 0;
+        }
+
+        .sitewrap {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          overflow: hidden;
+          z-index: 2;
+          background: transparent;
+          transition: height 0.05s ease-out;
+        }
+
+        #mainframe {
+          width: 100%;
+          height: 100%;
+          border: none;
+          outline: none;
+          background: transparent;
+          display: block;
+          transition: opacity 0.18s ease, height 0.05s ease-out;
+        }
+
+        #mainframe.fading {
+          opacity: 0;
+          pointer-events: none;
+        }
+
+        iframe {
+          border: 0;
+          outline: none;
+        }
+
+        .nav-overlay {
+          background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        body.sidebar-open {
+          overflow: hidden;
+        }
+
+        #sj-toast {
+          position: fixed;
+          bottom: 24px;
+          right: 24px;
+          background: color-mix(in srgb, var(--navbar) 96%, transparent);
+          border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+          border-left: 3px solid var(--accent);
+          color: var(--text-color);
+          font-family: system-ui, sans-serif;
+          padding: 12px 16px;
+          border-radius: 10px;
+          box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+          opacity: 0;
+          pointer-events: none;
+          transform: translateY(12px);
+          transition: opacity 0.3s ease, transform 0.3s ease;
+          z-index: 9999;
+          min-width: 200px;
+        }
+        #sj-toast.show {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        #sj-toast-title {
+          font-size: 0.7rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          color: var(--accent);
+          margin-bottom: 4px;
+        }
+        #sj-toast-body {
+          font-size: 0.875rem;
+          font-weight: 500;
+          color: var(--text-color);
+        }
+
+        .chat-badge {
+          position: absolute;
+          top: 2px;
+          right: 2px;
+          min-width: 16px;
+          height: 16px;
+          border-radius: 8px;
+          background: #ef4444;
+          color: #fff;
+          font-size: 9px;
+          font-weight: 700;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0 3px;
+          pointer-events: none;
+          line-height: 1;
+          box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+          animation: badgePop .2s ease;
+        }
+        @keyframes badgePop {
+          from { transform: scale(0.5); opacity: 0; }
+          to   { transform: scale(1);   opacity: 1; }
+        }
+    </style>
+</head>
+
+<body class="app-mode">
+    <div id="sj-toast">
+      <div id="sj-toast-title">Aetheris</div>
+      <div id="sj-toast-body">proxy ready!</div>
+    </div>
+    <input type="checkbox" id="nav-toggle" class="nav-toggle" />
+    <label for="nav-toggle" class="nav-handle" aria-label="Open sidebar">☾</label>
+
+    <nav class="sidebar" aria-label="Main navigation">
+        <label for="nav-toggle" class="sidebar-edge" aria-label="Close sidebar"></label>
+
+        <div class="logo">
+            <a href="#" data-page="home" title="Home">
+                <img src="./assets/images/icon.png" draggable="false" class="logo-img" alt="Aetheris logo">
+            </a>
+            <div class="logo-text">
+                <span class="logo-name">Aetheris</span>
+                <span class="logo-version">the best site</span>
+            </div>
+        </div>
+
+        <div class="navitems">
+            <div class="navitem">
+                <a href="#" data-page="home"><img src="./assets/images/home.png" alt=""><span class="nav-label">Home</span></a>
+            </div>
+            <div class="navitem">
+                <a href="#" data-page="games"><img src="./assets/images/games.png" alt=""><span class="nav-label">Games</span></a>
+            </div>
+            <div class="navitem">
+                <a href="#" data-page="apps"><img src="./assets/images/apps.png" alt=""><span class="nav-label">Apps</span></a>
+            </div>
+            <div class="navitem">
+                <a href="#" data-page="cheats"><img src="./assets/images/cheats.png" alt=""><span class="nav-label">Cheats</span></a>
+            </div>
+            <div class="navitem">
+                <a href="#" data-page="search"><img src="./assets/images/search.png" alt=""><span class="nav-label">Search</span></a>
+            </div>
+            <div class="navitem">
+                <a href="#" data-page="chat"><img src="./assets/images/chat.png" alt=""><span class="nav-label">Chat</span></a>
+            </div>
+            <div class="navitem">
+                <a href="#" data-page="movies"><img src="./assets/images/movies.png" alt=""><span class="nav-label">Movies</span></a>
+            </div>
+        </div>
+
+        <div class="navitems-bottom">
+            <div class="navitem">
+                <a href="#" data-page="settings"><img src="./assets/images/settings.png" alt=""><span class="nav-label">Settings</span></a>
+            </div>
+            <div class="navitem">
+                <a href="#" data-page="about"><img src="./assets/images/about.png" alt=""><span class="nav-label">About</span></a>
+            </div>
+        </div>
+    </nav>
+
+    <label for="nav-toggle" class="nav-overlay" aria-hidden="true"></label>
+
+    <div class="sitewrap">
+        <iframe id="mainframe" class="embed-frame" allowfullscreen frameborder="0" referrerpolicy="no-referrer" title="content" src="home.html"></iframe>
+    </div>
+
+    <script>
+        var VALID_THEMES = { "main": 1, "dark": 1, "charcoal-gold": 1, "dark-blue": 1 };
+
+        var mainframe = document.getElementById("mainframe");
+        var navcheck  = document.getElementById("nav-toggle");
+
+        navcheck.addEventListener("change", function() {
+          document.body.classList.toggle("sidebar-open", navcheck.checked);
+        });
+
+        var pages = {
+          home: "home.html",
+          games: "maths.html",
+          apps: "apps.html",
+          cheats: "cheats.html",
+          chat: "chat.html",
+          movies: "movies.html",
+          search: "search.html",
+          about: "about.html",
+          settings: "settings.html"
+        };
+
+        function gopage(name) {
+          var url = pages[name];
+          if (!url) { url = pages.home; name = "home"; }
+
+          // Update active nav state + badge immediately
+          if (name === "chat") chatbadge(0);
+          document.querySelectorAll(".navitem a").forEach(function(link) {
+            link.classList.toggle("is-active", link.getAttribute("data-page") === name);
+          });
+          if (window.innerWidth <= 700 && navcheck) {
+            navcheck.checked = false;
+            document.body.classList.remove("sidebar-open");
+          }
+
+          if (mainframe.getAttribute("src") !== url) {
+            // Fade out, swap src, fade back in on load
+            mainframe.classList.add("fading");
+            var targetUrl = url;
+            setTimeout(function() {
+              mainframe.src = targetUrl;
+              function onFrameLoad() {
+                mainframe.removeEventListener("load", onFrameLoad);
+                mainframe.classList.remove("fading");
+              }
+              mainframe.addEventListener("load", onFrameLoad);
+            }, 160);
+          }
+        }
+
+        document.querySelectorAll(".navitem a, .logo a").forEach(function(el) {
+          el.addEventListener("click", function(e) {
+            e.preventDefault();
+            var page = this.getAttribute("data-page");
+            if (page) gopage(page);
+          });
+        });
+
+        function applytheme(theme) {
+          var t = theme || localStorage.getItem("aetheris-theme") || "main";
+          if (!VALID_THEMES[t]) t = "main";
+          document.documentElement.setAttribute("theme", t);
+          if (document.body && document.body.getAttribute("theme") !== t) {
+            document.body.setAttribute("theme", t);
+          }
+          if (mainframe && mainframe.contentWindow) {
+            try { mainframe.contentWindow.postMessage({ type: "theme-changed", theme: t }, location.origin); } catch(_) {}
+          }
+        }
+        applytheme();
+
+        window.addEventListener("message", function(ev) {
+          if (ev.source !== mainframe.contentWindow) return;
+          if (ev.origin !== location.origin) return;
+
+          var msg = ev.data || {};
+
+          if (msg.type === "chat-unread") chatbadge(msg.count);
+          if (msg.type === "navigate") gopage(msg.page);
+
+          if (msg.type === "scramjet-status") {
+            var toast = document.getElementById("sj-toast");
+            document.getElementById("sj-toast-body").textContent = msg.message;
+            toast.classList.add("show");
+            setTimeout(function() { toast.classList.remove("show"); }, 3000);
+          }
+
+          if (msg.type === "theme-changed" && msg.theme && VALID_THEMES[msg.theme]) {
+            localStorage.setItem("aetheris-theme", msg.theme);
+            applytheme(msg.theme);
+          }
+        });
+
+        function chatbadge(count) {
+          var chatnav = document.querySelector('.navitem a[data-page="chat"]');
+          if (!chatnav) return;
+          var badge = chatnav.querySelector(".chat-badge");
+          if (count > 0) {
+            if (!badge) {
+              badge = document.createElement("span");
+              badge.className = "chat-badge";
+              chatnav.appendChild(badge);
+            }
+            badge.textContent = count > 99 ? "99+" : count;
+          } else if (badge) {
+            badge.remove();
+          }
+        }
+
+        (function() {
+          function gettoken() {
+            var autologin = localStorage.getItem("dmAutoLogin") !== "false";
+            return autologin
+              ? (localStorage.getItem("dmToken") || sessionStorage.getItem("dmToken") || "")
+              : (sessionStorage.getItem("dmToken") || "");
+          }
+
+          async function checkunread() {
+            var token = gettoken();
+            if (!token) { chatbadge(0); return; }
+            var active = document.querySelector(".navitem a.is-active");
+            if (active && active.getAttribute("data-page") === "chat") return;
+            try {
+              var r = await fetch("/api/dm-inbox", { headers: { "Authorization": "Bearer " + token } });
+              if (!r.ok) return;
+              var d = await r.json();
+              if (!d.ok) return;
+              var total = (d.conversations || []).reduce(function(s, c) { return s + (c.unread || 0); }, 0);
+              chatbadge(total);
+            } catch(_) {}
+          }
+
+          checkunread();
+          setInterval(checkunread, 15000);
+        })();
+
+        (function() {
+          if (typeof EventSource === "undefined") return;
+          var lastcount = null;
+
+          function sendcount(n) {
+            try { mainframe.contentWindow.postMessage({ type: "online-count", count: n }, location.origin); } catch(_) {}
+          }
+
+          mainframe.addEventListener("load", function() {
+            applytheme();
+            if (lastcount !== null) sendcount(lastcount);
+          });
+
+          function connect() {
+            var es = new EventSource("/online");
+            es.onmessage = function(e) {
+              var n = parseInt(e.data, 10);
+              if (isNaN(n)) return;
+              lastcount = n;
+              sendcount(n);
+            };
+            es.onerror = function() {
+              es.close();
+              setTimeout(connect, 5000);
+            };
+          }
+          connect();
+        })();
+
+        (function() {
+          var wrap = document.querySelector(".sitewrap");
+          if (!wrap) return;
+          function resize() {
+            var h = window.innerHeight + "px";
+            wrap.style.height = h;
+            mainframe.style.height = h;
+          }
+          window.addEventListener("resize", resize);
+          if (window.visualViewport) window.visualViewport.addEventListener("resize", resize);
+          resize();
+        })();
+    </script>
+</body>
+</html>

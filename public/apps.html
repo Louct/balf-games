@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="./assets/images/icon.png" type="image/png" />
+    <title>Aetheris</title>
+    <link rel="stylesheet" href="./css/main.css?v=3" />
+    <link rel="stylesheet" href="./css/cards.css?v=3" />
+    <link rel="stylesheet" href="./css/themes.css?v=3" />
+    <link rel="stylesheet" href="./css/nav.css?v=3" />
+    <script src="register-sw.js" defer></script>
+<script defer src="./js/preload.js"></script>
+    <script defer src="./assets/data/apps.js"></script>
+    <script defer src="./js/apps.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="./js/theme.js?v=2"></script>
+    <style>
+      @keyframes hvr-bob { 0%{transform:translateY(-8px)} 50%{transform:translateY(-4px)} 100%{transform:translateY(-8px)} }
+      @keyframes hvr-bob-float { 100%{transform:translateY(-8px)} }
+      .hvr-bob{display:inline-block;vertical-align:middle;transition-duration:.3s;transition-property:transform}
+      .hvr-bob:hover,.hvr-bob:focus,.hvr-bob:active{transform:translateZ(0);backface-visibility:hidden;animation-name:hvr-bob-float,hvr-bob;animation-duration:.3s,1.5s;animation-delay:0s,.3s;animation-timing-function:ease-out,ease-in-out;animation-iteration-count:1,infinite;animation-fill-mode:forwards;animation-direction:normal,alternate}
+      #favoritedapps:empty { display: none; }
+      .section-label {
+        text-align: left;
+        padding: 0 24px;
+        margin: 4px 0 8px;
+        font-size: 13px;
+        opacity: 0.7;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page-wrapper">
+      <h1>Apps</h1>
+      <div class="section-label" id="favorited-apps-label" style="display:none;">Favorites</div>
+      <div class="card-container" id="favoritedapps"></div>
+      <div class="card-container" id="appcards"></div>
+    </div>
+  </body>
+</html>

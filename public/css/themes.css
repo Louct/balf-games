@@ -1,0 +1,178 @@
+:root[theme="main"], body[theme="main"] {
+  --text-color: #fff;
+  --background: linear-gradient(135deg, #3b0a3f 0%, #5b1a6e 40%, #3c1361 100%);
+  --bg-color: #3c1361;
+  --navbar: #140a1a;
+  --accent: #d946ef;
+  --sidebar-bg: linear-gradient(
+    180deg,
+    rgba(100, 60, 158, 0.97) 0%,
+    rgba(72, 32, 128, 0.98) 30%,
+    rgba(52, 18, 100, 0.99) 65%,
+    rgba(38, 14, 78, 1)     100%
+  );
+  --sidebar-border: rgba(255, 168, 224, 0.14);
+  --sidebar-top-bg: radial-gradient(
+    circle at 50% -30%,
+    rgba(255, 255, 255, 0.12),
+    transparent 50%
+  );
+  --surface-hover: rgba(255, 200, 240, 0.1);
+  --surface-active: linear-gradient(
+    110deg,
+    rgba(210, 208, 255, 0.97) 0%,
+    rgba(248, 170, 225, 0.97) 100%
+  );
+  --nav-text: rgba(248, 238, 255, 0.85);
+  --nav-active-text: #4a2d68;
+  --sidebar-handle-bg: linear-gradient(
+    160deg,
+    rgba(90, 55, 140, 0.97),
+    rgba(55, 25, 100, 0.99)
+  );
+  --sidebar-handle-color: #ffd67b;
+  --active-shadow: 0 8px 28px rgba(220, 100, 195, 0.2);
+  --sidebar-divider: rgba(255, 210, 240, 0.08);
+  --logo-glow: rgba(255, 255, 255, 0.12);
+  --sidebar-inner-line: rgba(255, 200, 240, 0.04);
+}
+
+:root[theme="dark"], body[theme="dark"] {
+  --text-color: #e5e5e5;
+  --background: linear-gradient(135deg, #0f0f0f 0%, #161616 40%, #0a0a0a 100%);
+  --bg-color: #0f0f0f;
+  --navbar: #0a0a0a;
+  --accent: #6b7280;
+  --sidebar-bg: linear-gradient(
+    180deg,
+    rgba(20, 20, 22, 0.97),
+    rgba(10, 10, 12, 0.98)
+  );
+  --sidebar-border: rgba(255, 255, 255, 0.055);
+  --sidebar-top-bg: rgba(255, 255, 255, 0.025);
+  --surface-hover: rgba(255, 255, 255, 0.055);
+  --surface-active: linear-gradient(110deg, rgba(90, 95, 105, 0.98), rgba(170, 176, 186, 0.98));
+  --nav-text: rgba(240, 242, 246, 0.8);
+  --nav-active-text: #0f1117;
+  --sidebar-handle-bg: rgba(18, 18, 22, 0.97);
+  --sidebar-handle-color: #d1d5db;
+  --active-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --sidebar-divider: rgba(255, 255, 255, 0.055);
+  --sidebar-inner-line: rgba(255, 255, 255, 0.03);
+  --logo-glow: rgba(255, 255, 255, 0.08);
+}
+
+:root[theme="charcoal-gold"], body[theme="charcoal-gold"] {
+  --text-color: #e5e5e5;
+  --background: linear-gradient(135deg, #0f0f0f 0%, #161616 40%, #0a0a0a 100%);
+  --bg-color: #0f0f0f;
+  --navbar: #0a0a0a;
+  --accent: #c4955c;
+  --sidebar-bg: linear-gradient(
+    180deg,
+    rgba(20, 20, 22, 0.97),
+    rgba(10, 10, 12, 0.98)
+  );
+  --sidebar-border: rgba(196, 149, 92, 0.15);
+  --sidebar-top-bg: rgba(196, 149, 92, 0.04);
+  --surface-hover: rgba(196, 149, 92, 0.1);
+  --surface-active: linear-gradient(110deg, rgba(150, 105, 55, 0.98), rgba(196, 149, 92, 0.98));
+  --nav-text: rgba(240, 238, 230, 0.8);
+  --nav-active-text: #1a0f00;
+  --sidebar-handle-bg: rgba(18, 18, 22, 0.97);
+  --sidebar-handle-color: #c4955c;
+  --active-shadow: 0 8px 24px rgba(140, 100, 60, 0.2);
+  --sidebar-divider: rgba(196, 149, 92, 0.08);
+  --sidebar-inner-line: rgba(196, 149, 92, 0.04);
+  --logo-glow: rgba(196, 149, 92, 0.08);
+}
+
+:root[theme="dark-blue"], body[theme="dark-blue"] {
+  --text-color: #e5e7eb;
+  --background:
+    radial-gradient(circle at top left,  #020617 0, #020617 35%, #02061700 60%),
+    radial-gradient(circle at top right, #020617 0, #020617 35%, #02061700 60%),
+    linear-gradient(#020617, #000);
+  --bg-color: #020617;
+  --navbar: #020617;
+  --accent: #60a5fa;
+  --sidebar-bg: linear-gradient(
+    180deg,
+    rgba(6, 15, 32, 0.97),
+    rgba(2, 8, 20, 0.99)
+  );
+  --sidebar-border: rgba(96, 165, 250, 0.13);
+  --sidebar-top-bg: rgba(96, 165, 250, 0.04);
+  --surface-hover: rgba(96, 165, 250, 0.1);
+  --surface-active: linear-gradient(110deg, #6aacf5 0%, #bdd8ff 100%);
+  --nav-text: rgba(230, 242, 255, 0.8);
+  --nav-active-text: #0c2244;
+  --sidebar-handle-bg: rgba(6, 15, 32, 0.97);
+  --sidebar-handle-color: #7ab8ff;
+  --active-shadow: 0 8px 24px rgba(96, 165, 250, 0.2);
+  --sidebar-divider: rgba(96, 165, 250, 0.1);
+  --sidebar-inner-line: rgba(96, 165, 250, 0.05);
+  --logo-glow: rgba(96, 165, 250, 0.08);
+}
+
+body {
+  transition: background-color 0.22s ease, color 0.22s ease;
+}
+
+.dark-home  { display: none;  }
+
+:is(:root, body):is([theme="dark"], [theme="dark-blue"], [theme="charcoal-gold"]) .main-home { display: none; }
+
+:is(:root, body):is([theme="dark"], [theme="dark-blue"], [theme="charcoal-gold"]) .dark-home {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  width: min(800px, 90%);
+  margin: 0 auto;
+  text-align: center;
+}
+
+:is(:root, body):is([theme="dark"], [theme="dark-blue"], [theme="charcoal-gold"]) .dark-title {
+  font-size: 72px;
+  font-weight: 900;
+  letter-spacing: -2px;
+  margin-bottom: 6px;
+}
+
+:is(:root, body):is([theme="dark"], [theme="dark-blue"], [theme="charcoal-gold"]) .dark-subtitle {
+  font-size: 15px;
+  opacity: 0.75;
+  margin-bottom: 26px;
+}
+
+:is(:root, body):is([theme="dark"], [theme="dark-blue"], [theme="charcoal-gold"]) .dark-search-wrap {
+  width: 100%;
+  margin-bottom: 22px;
+}
+
+:is(:root, body):is([theme="dark"], [theme="dark-blue"], [theme="charcoal-gold"]) .dark-search {
+  width: 100%;
+  max-width: 720px;
+  height: 60px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.45);
+  color: #e5e5e5;
+  font-size: 18px;
+  padding: 0 24px;
+  outline: none;
+  margin: 0 auto;
+  backdrop-filter: blur(8px);
+  transition: border-color 0.25s ease, background 0.25s ease;
+}
+
+:is(:root, body):is([theme="dark"], [theme="dark-blue"], [theme="charcoal-gold"]) .dark-search:focus {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(0, 0, 0, 0.65);
+}
+
+:is(:root, body):is([theme="dark"], [theme="dark-blue"], [theme="charcoal-gold"]) .dark-search::placeholder {
+  color: rgba(229, 231, 235, 0.5);
+}

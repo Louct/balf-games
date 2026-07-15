@@ -1,0 +1,100 @@
+[
+  {
+    "id": "gust",
+    "title": "Gust Browser",
+    "html": "assets/games/gust.html",
+    "image": "assets/images/gust.png",
+    "noProxy": true
+  },
+  {
+    "id": "emulatorjs",
+    "title": "Emulator.js",
+    "html": "assets/games/emulatorjs.html",
+    "image": "assets/images/emulatorjs.png",
+    "source": "aetheris"
+  },
+  {
+    "id": "ruffle",
+    "title": "Ruffle",
+    "html": "assets/games/ruffle.html",
+    "image": "assets/images/ruffle.png",
+    "source": "aetheris"
+  },
+  {
+    "id": "Barricade",
+    "title": "Barricade",
+    "url": "https://barricade.gg/",
+    "image": "assets/images/barricadegg.png",
+    "source": "aetheris"
+  },
+  {
+    "id": "legionio",
+    "title": "Legion.io",
+    "url": "https://legionsdk.com/",
+    "image": "assets/images/legion.jpg",
+    "source": "aetheris"
+  },
+  {
+    "id": "ai",
+    "title": "AI Assistant",
+    "html": "assets/games/ai.html",
+    "image": "assets/images/ai.png",
+    "noProxy": true
+  },
+  {
+    "id": "codeeditor",
+    "title": "Code Editor",
+    "html": "assets/games/codeeditor.html",
+    "image": "assets/images/codeeditor.png",
+    "noProxy": true
+  },
+  {
+    "id": "tiktok",
+    "title": "TikTok",
+    "url": "https://www.tiktok.com/",
+    "image": "assets/images/tiktok.png"
+  },
+  {
+    "id": "soundboard",
+    "title": "Soundboard",
+    "html": "assets/games/Soundboard.html",
+    "image": "assets/images/soundboard.webp",
+    "noProxy": true
+  },
+  {
+    "id": "soundbuttons",
+    "title": "Sound Buttons",
+    "url": "https://www.myinstants.com/en/categories/sound%20effects/us/",
+    "image": "assets/images/soundboard.webp"
+  },
+  {
+    "id": "chadrankings",
+    "title": "Chad Rankings",
+    "url": "https://officialchadrankings.com/",
+    "image": "assets/images/vmogsu.jpg"
+  },
+  {
+    "id": "vscode",
+    "title": "Visual Studio Code",
+    "url": "https://vscode.dev/",
+    "image": "assets/images/vscode.png"
+  },
+  {
+    "id": "reddit",
+    "title": "Reddit",
+    "url": "https://reddit.com",
+    "image": "assets/images/reddit.webp"
+  },
+  {
+    "id": "youtube",
+    "title": "YouTube",
+    "url": "https://youtube.com",
+    "image": "assets/images/yt.png"
+  },
+  {
+    "id": "chess",
+    "title": "Chess.com",
+    "url": "https://chess.com",
+    "image": "assets/images/chess.png"
+  }
+]
