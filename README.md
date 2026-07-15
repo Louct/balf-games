@@ -2,6 +2,7 @@
   <img src="public/assets/images/icon.png" width="80" />
   <h1>Aetheris</h1>
   <p>games, proxy, movies and a chat: all in one place</p>
+  <p>open source again after 5 months</p>
 </div>
 
 ## what's inside
