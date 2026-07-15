@@ -30,7 +30,7 @@ body {
 .movies-title {
     font-size: 1.3rem;
     font-weight: 700;
-    color: var(--accent, #d946ef);
+    color: var(--accent, #6b7280);
     letter-spacing: .5px;
     white-space: nowrap;
 }
@@ -50,9 +50,9 @@ body {
 }
 
 .mode-btn.active {
-    background: var(--accent, #d946ef);
+    background: var(--accent, #6b7280);
     color: #fff;
-    border-color: var(--accent, #d946ef);
+    border-color: var(--accent, #6b7280);
 }
 
 .search-wrap { position: relative; flex: 1; max-width: 340px; min-width: 140px; }
@@ -69,7 +69,7 @@ body {
     transition: border-color 0.2s;
 }
 
-.search-wrap input:focus { border-color: var(--accent, #d946ef); }
+.search-wrap input:focus { border-color: var(--accent, #6b7280); }
 .search-wrap input::placeholder { color: rgba(255,255,255,0.35); }
 
 main {
@@ -99,7 +99,7 @@ main {
 .card:hover {
     transform: translateY(-5px);
     box-shadow: 0 16px 40px rgba(0,0,0,0.45);
-    border-color: var(--accent, #d946ef);
+    border-color: var(--accent, #6b7280);
 }
 
 .card img {
@@ -120,7 +120,7 @@ main {
 
 .card .card-meta {
     font-size: 0.75rem;
-    color: var(--accent, #d946ef);
+    color: var(--accent, #6b7280);
     margin-top: 3px;
 }
 
@@ -149,19 +149,19 @@ main {
     align-items: center;
     justify-content: center;
     min-height: 225px;
-    background: color-mix(in srgb, var(--accent, #d946ef) 15%, transparent);
-    color: var(--accent, #d946ef);
+    background: color-mix(in srgb, var(--accent, #6b7280) 15%, transparent);
+    color: var(--accent, #6b7280);
     font-weight: 600;
     font-size: 0.95rem;
     border-radius: 14px;
-    border: 1px dashed color-mix(in srgb, var(--accent, #d946ef) 50%, transparent);
+    border: 1px dashed color-mix(in srgb, var(--accent, #6b7280) 50%, transparent);
     cursor: pointer;
     transition: background 0.2s, color 0.2s, transform 0.2s;
     user-select: none;
 }
 
 .load-more:hover {
-    background: var(--accent, #d946ef);
+    background: var(--accent, #6b7280);
     color: #fff;
     transform: translateY(-3px);
 }
@@ -187,7 +187,7 @@ main {
     width: 95%;
     max-width: 1100px;
     background: #050508;
-    border: 1px solid var(--accent, #d946ef);
+    border: 1px solid var(--accent, #6b7280);
     border-radius: 16px;
     overflow: hidden;
     display: flex;
@@ -200,7 +200,7 @@ main {
     align-items: center;
     justify-content: space-between;
     padding: 12px 16px;
-    background: color-mix(in srgb, var(--accent, #d946ef) 85%, #000);
+    background: color-mix(in srgb, var(--accent, #6b7280) 85%, #000);
     flex-wrap: wrap;
     gap: 10px;
 }
@@ -297,7 +297,7 @@ main {
 }
 
 .ep-btn:hover { background: rgba(255,255,255,0.12); }
-.ep-btn.active { background: var(--accent, #d946ef); border-color: var(--accent, #d946ef); color: #fff; }
+.ep-btn.active { background: var(--accent, #6b7280); border-color: var(--accent, #6b7280); color: #fff; }
 
 .player-wrap {
     position: relative;

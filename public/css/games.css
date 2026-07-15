@@ -1,17 +1,17 @@
 :root {
   --games-panel: rgba(255, 255, 255, 0.05);
-  --games-panel-strong: color-mix(in srgb, var(--background, #2b0a45) 68%, rgba(255,255,255,0.07));
+  --games-panel-strong: color-mix(in srgb, var(--background, #0f0f0f) 68%, rgba(255,255,255,0.07));
   --games-border: rgba(255, 255, 255, 0.1);
   --games-shadow: rgba(0, 0, 0, 0.22);
   --games-chip: rgba(255, 255, 255, 0.07);
   --games-chip-hover: rgba(255, 255, 255, 0.12);
   --games-text-soft: rgba(255, 255, 255, 0.78);
-  --games-accent: rgba(168, 85, 247, 0.18);
-  --games-accent-strong: rgba(196, 132, 252, 0.32);
+  --games-accent: rgba(255, 255, 255, 0.1);
+  --games-accent-strong: rgba(255, 255, 255, 0.15);
   --games-search-start: rgba(255,255,255,0.05);
   --games-search-end: rgba(255,255,255,0.02);
   --games-search-stroke: rgba(255,255,255,0.10);
-  --games-focus-ring: rgba(196, 132, 252, 0.18);
+  --games-focus-ring: rgba(255, 255, 255, 0.1);
   --tag-bg: rgba(255, 255, 255, 0.08);
   --tag-border: rgba(255, 255, 255, 0.12);
   --tag-active: #c084fc;
@@ -39,18 +39,6 @@ body[theme="dark-blue"] {
   --tag-border: rgba(255, 255, 255, 0.1);
   --tag-active: #a5f3fc;
   --tag-active-bg: rgba(165, 243, 252, 0.16);
-}
-
-:root[theme="main"],
-body[theme="main"] {
-  --games-accent: rgba(168, 85, 247, 0.16);
-  --games-accent-strong: rgba(217, 70, 239, 0.26);
-  --games-search-start: rgba(115, 32, 154, 0.24);
-  --games-search-end: rgba(255,255,255,0.03);
-  --games-search-stroke: rgba(230, 180, 255, 0.16);
-  --games-focus-ring: rgba(217, 70, 239, 0.14);
-  --tag-active: #d946ef;
-  --tag-active-bg: rgba(217, 70, 239, 0.2);
 }
 
 html.in-iframe .games-topbar,
@@ -303,14 +291,6 @@ html.in-iframe .tag-bar {
   color: #f4f5fb;
 }
 
-:root[theme="main"] #source-filter option,
-:root[theme="main"] #source-filter optgroup,
-body[theme="main"] #source-filter option,
-body[theme="main"] #source-filter optgroup {
-  background: #2b123f;
-  color: #f7ecff;
-}
-
 :root[theme="dark"] #source-filter option,
 :root[theme="dark-blue"] #source-filter option,
 :root[theme="dark"] #source-filter optgroup,
@@ -536,14 +516,14 @@ body[theme="dark-blue"] #source-filter optgroup {
   right: 12px;
   max-width: 420px;
   width: calc(100% - 24px);
-  background: rgba(168, 85, 247, 0.15);
+  background: rgba(20, 20, 22, 0.92);
   backdrop-filter: blur(8px) saturate(180%);
   -webkit-backdrop-filter: blur(8px) saturate(180%);
   border-radius: 20px;
   padding: 18px 20px;
   color: #ffffff;
   border: 1px solid rgba(255, 255, 255, 0.25);
-  box-shadow: 0 8px 30px rgba(168, 85, 247, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.15);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4), inset 0 0 0 1px rgba(255, 255, 255, 0.15);
   display: none;
   z-index: 9999;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
@@ -617,7 +597,7 @@ body[theme="dark-blue"] #source-filter optgroup {
   width: 14px;
   height: 14px;
   cursor: pointer;
-  accent-color: rgba(168, 85, 247, 0.9);
+  accent-color: rgba(107, 114, 128, 0.9);
 }
 
 @media (max-width: 1024px) {

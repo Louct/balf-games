@@ -15,13 +15,12 @@
   }
 
   var themes = {
-    "main":          { bg: "linear-gradient(135deg, #3b0a3f 0%, #5b1a6e 40%, #3c1361 100%)", bgc: "#3c1361", color: "#fff" },
     "dark":          { bg: "linear-gradient(135deg, #0f0f0f 0%, #161616 40%, #0a0a0a 100%)", bgc: "#0f0f0f", color: "#e5e5e5" },
     "charcoal-gold": { bg: "linear-gradient(135deg, #0f0f0f 0%, #161616 40%, #0a0a0a 100%)", bgc: "#0f0f0f", color: "#e5e5e5" },
     "dark-blue":     { bg: "linear-gradient(#020617, #000)", bgc: "#020617", color: "#e5e7eb" },
   };
 
-  var validthemes = { "main": 1, "dark": 1, "charcoal-gold": 1, "dark-blue": 1 };
+  var validthemes = { "dark": 1, "charcoal-gold": 1, "dark-blue": 1 };
 
   var bgoverlay = null;
   function getoverlay() {
@@ -38,8 +37,8 @@
     bgoverlay = null;
   }
 
-  var t = localStorage.getItem(THEME_KEY) || "main";
-  if (!validthemes[t]) { t = "main"; localStorage.setItem(THEME_KEY, t); }
+  var t = localStorage.getItem(THEME_KEY) || "dark";
+  if (!validthemes[t]) { t = "dark"; localStorage.setItem(THEME_KEY, t); }
 
   function apply(theme) {
     document.documentElement.setAttribute("theme", theme);

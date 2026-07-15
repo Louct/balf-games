@@ -28,16 +28,16 @@
 
           (function() {
             var THEME_KEY = "aetheris-theme";
-            var validthemes = { "main": 1, "dark": 1, "charcoal-gold": 1, "dark-blue": 1 };
+            var validthemes = { "dark": 1, "charcoal-gold": 1, "dark-blue": 1 };
 
             if (!localStorage.getItem(THEME_KEY) && localStorage.getItem("theme")) {
               localStorage.setItem(THEME_KEY, localStorage.getItem("theme"));
               localStorage.removeItem("theme");
             }
-            var t = localStorage.getItem(THEME_KEY) || "main";
+            var t = localStorage.getItem(THEME_KEY) || "dark";
             if (t === "dark blue")     { t = "dark-blue";     localStorage.setItem(THEME_KEY, t); }
             if (t === "charcoal gold") { t = "charcoal-gold"; localStorage.setItem(THEME_KEY, t); }
-            if (!validthemes[t]) { t = "main"; localStorage.setItem(THEME_KEY, t); }
+            if (!validthemes[t]) { t = "dark"; localStorage.setItem(THEME_KEY, t); }
 
             document.documentElement.setAttribute("theme", t);
             document.addEventListener("DOMContentLoaded", function() {
@@ -185,15 +185,15 @@
         }, { once: true });
     </script>
 
-    <meta name="theme-color" content="#3b0a3f" />
+    <meta name="theme-color" content="#0f0f0f" />
     <script>
       (function() {
-        var themeColors = { "main": "#3b0a3f", "dark": "#0f0f0f", "charcoal-gold": "#0f0f0f", "dark-blue": "#020617" };
+        var themeColors = { "dark": "#0f0f0f", "charcoal-gold": "#0f0f0f", "dark-blue": "#020617" };
         function updatethemecolor(t) {
           var meta = document.querySelector('meta[name="theme-color"]');
           if (meta && themeColors[t]) meta.content = themeColors[t];
         }
-        var t = document.documentElement.getAttribute("theme") || localStorage.getItem("aetheris-theme") || "main";
+        var t = document.documentElement.getAttribute("theme") || localStorage.getItem("aetheris-theme") || "dark";
         updatethemecolor(t);
         window.addEventListener("message", function(e) {
           if (e.origin !== location.origin) return;
@@ -401,7 +401,7 @@
     </div>
 
     <script>
-        var VALID_THEMES = { "main": 1, "dark": 1, "charcoal-gold": 1, "dark-blue": 1 };
+        var VALID_THEMES = { "dark": 1, "charcoal-gold": 1, "dark-blue": 1 };
 
         var mainframe = document.getElementById("mainframe");
         var navcheck  = document.getElementById("nav-toggle");
@@ -460,8 +460,8 @@
         });
 
         function applytheme(theme) {
-          var t = theme || localStorage.getItem("aetheris-theme") || "main";
-          if (!VALID_THEMES[t]) t = "main";
+          var t = theme || localStorage.getItem("aetheris-theme") || "dark";
+          if (!VALID_THEMES[t]) t = "dark";
           document.documentElement.setAttribute("theme", t);
           if (document.body && document.body.getAttribute("theme") !== t) {
             document.body.setAttribute("theme", t);

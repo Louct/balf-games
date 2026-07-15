@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="./css/themes.css?v=3" />
     <link rel="stylesheet" href="./css/nav.css?v=3" />
 
-    <meta name="theme-color" content="#3b0a3f" />
+    <meta name="theme-color" content="#0f0f0f" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 
     <script src="register-sw.js" defer></script>
@@ -24,29 +24,6 @@
 </head>
 
 <body>
-
-    <div class="centered main-home">
-        <h1>welcome to aetheris</h1>
-
-        <div class="dark-search-wrap" style="margin-bottom:10px">
-            <input type="text" id="mainsearch" class="dark-search" placeholder="search anything..." autocomplete="off" />
-        </div>
-
-        <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:16px 0;">
-          <button onclick="openreport()" class="btn play">
-              something broken? tell me
-          </button>
-
-          <button onclick="launchab()" id="launchab" class="btn play">
-              Launch in about:blank
-          </button>
-        </div>
-
-        <div class="footer-links">
-            <a href="./settings.html" class="btn secondary-btn">Settings</a>
-            <a href="./about.html" class="btn secondary-btn">About</a>
-        </div>
-    </div>
 
     <div class="dark-home">
         <h1 class="dark-title">Aetheris</h1>
@@ -95,7 +72,7 @@
           background: rgba(255, 255, 255, 0.06);
           border: 1px solid rgba(255, 255, 255, 0.1);
           border-radius: 8px;
-          color: rgba(240, 232, 255, 0.75);
+          color: rgba(229, 229, 229, 0.75);
           font-family: 'JetBrains Mono', monospace;
           font-size: 11px;
           padding: 6px 11px;
@@ -103,14 +80,14 @@
           transition: background 0.14s, border-color 0.14s, color 0.14s;
         }
         .rtype:hover {
-          background: rgba(168, 85, 247, 0.15);
-          border-color: rgba(168, 85, 247, 0.4);
-          color: #f0e8ff;
+          background: rgba(255, 255, 255, 0.08);
+          border-color: rgba(255, 255, 255, 0.2);
+          color: #e5e5e5;
         }
         .rtype.selected {
-          background: rgba(168, 85, 247, 0.25);
-          border-color: rgba(168, 85, 247, 0.65);
-          color: #f0e8ff;
+          background: rgba(255, 255, 255, 0.12);
+          border-color: rgba(255, 255, 255, 0.3);
+          color: #e5e5e5;
         }
 
         .online-status {
@@ -182,7 +159,7 @@
         .update-modal button {
           cursor: pointer; border: none; border-radius: 999px;
           padding: 0.45rem 1rem; font-size: 0.9rem;
-          background: #6d28d9; color: white;
+          background: rgba(255,255,255,0.12); color: white;
           transition: opacity 0.2s;
         }
         .update-modal button:hover { opacity: 0.9; }
@@ -219,14 +196,14 @@
           justify-content: center;
         }
         .report-modal {
-          background: linear-gradient(160deg, rgba(30, 18, 52, 0.98), rgba(18, 10, 36, 0.99));
-          border: 1px solid rgba(255, 168, 224, 0.18);
+          background: linear-gradient(160deg, rgba(22, 22, 24, 0.98), rgba(10, 10, 12, 0.99));
+          border: 1px solid rgba(255, 255, 255, 0.1);
           border-radius: 20px;
           padding: 28px 26px 22px;
           width: min(460px, 92vw);
           box-shadow: 0 32px 80px rgba(0, 0, 0, 0.6);
           font-family: 'JetBrains Mono', monospace;
-          color: #f0e8ff;
+          color: #e5e5e5;
           position: relative;
         }
         .report-header {
@@ -247,7 +224,7 @@
           background: rgba(255, 255, 255, 0.06);
           border: 1px solid rgba(255, 255, 255, 0.1);
           border-radius: 8px;
-          color: #f0e8ff;
+          color: #e5e5e5;
           font-size: 16px;
           width: 32px;
           height: 32px;
@@ -276,7 +253,7 @@
           background: rgba(255, 255, 255, 0.05);
           border: 1px solid rgba(255, 255, 255, 0.1);
           border-radius: 10px;
-          color: #f0e8ff;
+          color: #e5e5e5;
           font-family: 'JetBrains Mono', monospace;
           font-size: 12px;
           padding: 10px 12px;
@@ -284,12 +261,12 @@
           outline: none;
           transition: border-color 0.15s;
         }
-        .report-textarea:focus { border-color: rgba(168, 85, 247, 0.5); }
+        .report-textarea:focus { border-color: rgba(255, 255, 255, 0.25); }
         .report-textarea-short { min-height: 56px; }
         .report-actions { display: flex; align-items: center; gap: 10px; }
         .report-btn-submit {
           flex: 1;
-          background: linear-gradient(110deg, rgba(168, 85, 247, 0.9), rgba(236, 72, 153, 0.85));
+          background: rgba(255, 255, 255, 0.12);
           border: 1px solid rgba(255, 255, 255, 0.15);
           border-radius: 11px;
           color: #fff;
@@ -307,7 +284,7 @@
           background: rgba(255, 255, 255, 0.05);
           border: 1px solid rgba(255, 255, 255, 0.09);
           border-radius: 11px;
-          color: rgba(240, 232, 255, 0.6);
+          color: rgba(229, 229, 229, 0.6);
           font-family: 'JetBrains Mono', monospace;
           font-size: 13px;
           padding: 11px 18px;

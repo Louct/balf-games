@@ -232,7 +232,6 @@ document.addEventListener("DOMContentLoaded", function () {
     };
 
     var themebgs = {
-      "main":          { bg: "linear-gradient(135deg, #3b0a3f 0%, #5b1a6e 40%, #3c1361 100%)", bgc: "#3c1361" },
       "dark":          { bg: "linear-gradient(135deg, #0f0f0f 0%, #161616 40%, #0a0a0a 100%)", bgc: "#0f0f0f" },
       "charcoal-gold": { bg: "linear-gradient(135deg, #0f0f0f 0%, #161616 40%, #0a0a0a 100%)", bgc: "#0f0f0f" },
       "dark-blue":     { bg: "linear-gradient(#020617, #000)", bgc: "#020617" },
@@ -245,7 +244,7 @@ document.addEventListener("DOMContentLoaded", function () {
       var overlay = document.getElementById("custom-bg-overlay");
       if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
 
-      var t = themebgs[localStorage.getItem("aetheris-theme") || "main"] || {};
+      var t = themebgs[localStorage.getItem("aetheris-theme") || "dark"] || {};
       document.body.style.setProperty("background-image", t.bg || "", "important");
       document.body.style.setProperty("background-color", t.bgc || "#0f0f0f", "important");
       clearinlinebg();

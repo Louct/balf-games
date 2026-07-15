@@ -303,7 +303,7 @@ body { display: flex; align-items: center; justify-content: center; }
 }
 
 .modal {
-  background: color-mix(in srgb, var(--navbar, #0c031c) 95%, transparent);
+  background: color-mix(in srgb, var(--navbar, #0a0a0a) 95%, transparent);
   backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
   border: 1px solid color-mix(in srgb, var(--accent,#a855f7) 22%, transparent); border-radius: 17px;
   padding: 22px 20px; width: min(350px, calc(100vw - 28px));

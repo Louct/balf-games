@@ -40,15 +40,15 @@
 }
 
 .rtype:hover {
-  background: rgba(168, 85, 247, 0.15);
-  border-color: rgba(168, 85, 247, 0.4);
-  color: #f0e8ff;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #e5e5e5;
 }
 
 .rtype.selected {
-  background: rgba(168, 85, 247, 0.25);
-  border-color: rgba(168, 85, 247, 0.65);
-  color: #f0e8ff;
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #e5e5e5;
 }
 
 .report-pill {
@@ -75,8 +75,8 @@
 }
 
 .report-pill:hover {
-  background: rgba(168, 85, 247, 0.2);
-  border-color: rgba(168, 85, 247, 0.4);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
   transform: translateY(-2px);
 }
 
@@ -249,8 +249,8 @@ body.left-handed .report-pill {
 }
 
 .chat-pill:hover {
-  background: rgba(168, 85, 247, 0.2);
-  border-color: rgba(168, 85, 247, 0.4);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
   transform: translateY(-2px);
 }
 
@@ -290,7 +290,7 @@ body.left-handed .chat-pill {
   z-index: 9997;
   border-radius: 16px;
   overflow: hidden;
-  border: 1px solid rgba(168, 85, 247, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.75);
   opacity: 0;
   transform: scale(0.94) translateY(12px);
@@ -339,7 +339,7 @@ body.left-handed .chat-panel {
   transition: background 0.15s, border-color 0.15s, transform 0.15s;
 }
 
-.osk-pill:hover { background: rgba(168, 85, 247, 0.2); border-color: rgba(168, 85, 247, 0.4); transform: translateY(-2px); }
+.osk-pill:hover { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.2); transform: translateY(-2px); }
 .osk-pill:active { transform: scale(0.96); }
 body.left-handed .osk-pill { left: max(20px, calc(env(safe-area-inset-left) + 12px)); right: auto; }
 
@@ -348,8 +348,8 @@ body.left-handed .osk-pill { left: max(20px, calc(env(safe-area-inset-left) + 12
   left: 0; top: 0;
   transform-origin: 0 0;
   z-index: 9996;
-  background: rgba(8, 4, 20, 0.92);
-  border: 1px solid rgba(168, 85, 247, 0.25);
+  background: rgba(12, 12, 14, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 14px;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -374,7 +374,7 @@ body.left-handed .osk-pill { left: max(20px, calc(env(safe-area-inset-left) + 12
 .osk-title {
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px; opacity: 0.4; letter-spacing: 0.1em;
-  text-transform: uppercase; color: #f0e8ff;
+  text-transform: uppercase; color: #e5e5e5;
   flex: 1; text-align: center; pointer-events: none;
 }
 
@@ -389,7 +389,7 @@ body.left-handed .osk-pill { left: max(20px, calc(env(safe-area-inset-left) + 12
   transition: background 0.1s, color 0.1s;
 }
 
-.osk-ctrl-btn:hover { background: rgba(168, 85, 247, 0.25); border-color: rgba(168, 85, 247, 0.45); color: #fff; }
+.osk-ctrl-btn:hover { background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.22); color: #fff; }
 
 .osk-rows { display: flex; flex-direction: column; gap: 4px; padding: 0 8px; }
 .osk-row { display: flex; gap: 4px; }
@@ -398,7 +398,7 @@ body.left-handed .osk-pill { left: max(20px, calc(env(safe-area-inset-left) + 12
   background: rgba(255, 255, 255, 0.07);
   border: 1px solid rgba(255, 255, 255, 0.11);
   border-bottom: 2px solid rgba(0, 0, 0, 0.3);
-  color: rgba(240, 232, 255, 0.82);
+  color: rgba(229, 229, 229, 0.82);
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px; line-height: 1;
   min-width: 32px; height: 32px;
@@ -409,8 +409,8 @@ body.left-handed .osk-pill { left: max(20px, calc(env(safe-area-inset-left) + 12
 }
 
 .osk-key:hover { background: rgba(255, 255, 255, 0.11); }
-.osk-key.osk-pressed { background: rgba(168, 85, 247, 0.22); border-color: rgba(168, 85, 247, 0.45); transform: scale(0.91); }
-.osk-key.osk-mod-on { background: rgba(168, 85, 247, 0.3); border-color: rgba(168, 85, 247, 0.6); color: #fff; }
+.osk-key.osk-pressed { background: rgba(255, 255, 255, 0.11); border-color: rgba(255, 255, 255, 0.22); transform: scale(0.91); }
+.osk-key.osk-mod-on { background: rgba(255, 255, 255, 0.14); border-color: rgba(255, 255, 255, 0.28); color: #fff; }
 .osk-key[data-w="wide"] { min-width: 52px; }
 .osk-key[data-w="wider"] { min-width: 64px; }
 .osk-key[data-w="space"] { flex: 1; min-width: 120px; }

@@ -36,7 +36,7 @@
             };
 
             document.addEventListener('DOMContentLoaded', function() {
-              var saved = localStorage.getItem('aetheris-theme') || 'main';
+              var saved = localStorage.getItem('aetheris-theme') || 'dark';
               document.querySelectorAll('.theme-card').forEach(function(c) {
                 c.classList.toggle('active', c.dataset.theme === saved);
               });
@@ -62,10 +62,6 @@
             <h4>Choose how Aetheris looks</h4>
 
             <div class="theme-cards" id="theme-cards">
-                <button class="theme-card" data-theme="main" onclick="selectthemecard('main')">
-                    <span class="theme-swatch" style="background:linear-gradient(135deg,#7c3aed,#4f1d96)"></span>
-                    <span class="theme-label">Purple</span>
-                </button>
                 <button class="theme-card" data-theme="dark" onclick="selectthemecard('dark')">
                     <span class="theme-swatch" style="background:linear-gradient(135deg,#2e2e2e,#1a1a1a)"></span>
                     <span class="theme-label">Charcoal</span>
@@ -81,7 +77,6 @@
             </div>
 
             <select id="theme-select" style="display:none">
-                <option value="main">Purple</option>
                 <option value="dark">Charcoal</option>
                 <option value="dark-blue">Dark Blue</option>
                 <option value="charcoal-gold">Charcoal Gold</option>

@@ -649,11 +649,6 @@ button:focus-visible,
 }
 
 @media (max-width: 900px) {
-  :root[theme="main"]:not(.has-custom-bg),
-  body[theme="main"]:not(.has-custom-bg) {
-    background-image: linear-gradient(135deg, #3b0a3f 0%, #5b1a6e 40%, #3c1361 100%) !important;
-  }
-
   body::before {
     opacity: 0.75 !important;
   }
