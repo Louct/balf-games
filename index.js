@@ -960,6 +960,8 @@ fastify.server.on("listening", () => {
 async function shutdown() {
 	console.log("shutting down");
 	flushplays();
+	// force exit after 3s if graceful close hangs (websocket connections keep the port held)
+	setTimeout(() => process.exit(0), 3000).unref();
 	await fastify.close();
 	process.exit(0);
 }
