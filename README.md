@@ -55,4 +55,4 @@ systemctl reload caddy
 
 ## credits
 
-Game files from [GN-Math](https://gn-math.dev) and [The Ultimate Game Stash](https://docs.google.com/document/d/1_FmH3BlSBQI7FGgAQL59-ZPe8eCxs35wel6JUyVaG8Q/preview?pli=1&tab=t.pvxbxnr5rcer&sle=true&pru=AAABnlARoYY*_5r087PNiPkXhHVGgjNYOA). if you fork this, a star would be appreciated!
+Game files from [GN-Math](https://gn-math.dev) and [The Ultimate Game Stash](https://docs.google.com/document/d/1_FmH3BlSBQI7FGgAQL59-ZPe8eCxs35wel6JUyVaG8Q/preview?pli=1&pru=AAABnlARoYY*_5r087PNiPkXhHVGgjNYOA&tab=t.0). if you fork this, a star would be appreciated!
