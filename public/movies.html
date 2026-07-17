@@ -310,6 +310,13 @@
             playerStatus.textContent = "Loading provider…";
             playerStatus.classList.remove("hidden");
 
+            if (src.name === "2Embed") {
+                player.removeAttribute("sandbox");
+            } else {
+                player.setAttribute("sandbox", "allow-scripts allow-same-origin allow-forms");
+            }
+
+            playerStatus.classList.add("hidden");
             player.onload = function() {
                 playerStatus.classList.add("hidden");
             };
