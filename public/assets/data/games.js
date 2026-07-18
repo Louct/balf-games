@@ -40,23 +40,48 @@ function normalizegame(rawgame, fallbacksource) {
   return game;
 }
 
-var GAMES_CACHE_KEY = "__gamesCache_v2";
 var GAMES_CACHE_TTL = 5 * 60 * 1000;
+var GAMES_IDB = "aetheris-games-cache";
+var GAMES_STORE = "cache";
+var GAMES_IDB_KEY = "games";
 
-function getcachedgames() {
-  try {
-    var raw = sessionStorage.getItem(GAMES_CACHE_KEY);
-    if (!raw) return null;
-    var cached = JSON.parse(raw);
-    if (Date.now() - cached.ts < GAMES_CACHE_TTL) return cached.data;
-  } catch (e) {}
-  return null;
+function opengamecache() {
+  return new Promise(function(resolve) {
+    try {
+      var req = indexedDB.open(GAMES_IDB, 1);
+      req.onupgradeneeded = function(e) { e.target.result.createObjectStore(GAMES_STORE); };
+      req.onsuccess = function(e) { resolve(e.target.result); };
+      req.onerror = function() { resolve(null); };
+    } catch (e) { resolve(null); }
+  });
 }
 
-function setcachedgames(data) {
+async function getcachedgames() {
+  var db = await opengamecache();
+  if (!db) return null;
+  return new Promise(function(resolve) {
+    try {
+      var tx = db.transaction(GAMES_STORE, "readonly");
+      var get = tx.objectStore(GAMES_STORE).get(GAMES_IDB_KEY);
+      get.onsuccess = function() {
+        db.close();
+        var v = get.result;
+        resolve(v && Date.now() - v.ts < GAMES_CACHE_TTL ? v.data : null);
+      };
+      get.onerror = function() { db.close(); resolve(null); };
+    } catch (e) { db.close(); resolve(null); }
+  });
+}
+
+async function setcachedgames(data) {
+  var db = await opengamecache();
+  if (!db) return;
   try {
-    sessionStorage.setItem(GAMES_CACHE_KEY, JSON.stringify({ ts: Date.now(), data: data }));
-  } catch (e) {}
+    var tx = db.transaction(GAMES_STORE, "readwrite");
+    tx.objectStore(GAMES_STORE).put({ ts: Date.now(), data: data }, GAMES_IDB_KEY);
+    tx.oncomplete = function() { db.close(); };
+    tx.onerror = function() { db.close(); };
+  } catch (e) { db.close(); }
 }
 
 async function fetchjson(url) {
@@ -72,7 +97,7 @@ async function fetchjson(url) {
 }
 
 async function loadgamesdata() {
-  var cached = getcachedgames();
+  var cached = await getcachedgames();
   if (cached) {
     window.games = cached;
     window.gamesloaded = true;

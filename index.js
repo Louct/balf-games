@@ -349,6 +349,12 @@ function proxywsconnection(req, socket, head) {
 	const hostport = slash === -1 ? path : path.slice(0, slash);
 	const rest = slash === -1 ? "" : path.slice(slash);
 
+	const host = hostport.split(":")[0];
+	if (host !== "growden.io" && !host.endsWith(".growden.io")) {
+		socket.end();
+		return;
+	}
+
 	const upstream = new WebSocket(`wss://${hostport}${rest}`, {
 		headers: { origin: "https://growden.io" },
 	});
@@ -892,9 +898,9 @@ fastify.addHook("onSend", (req, reply, payload, done) => {
 	} else if (String(reply.getHeader("content-type") || "").includes("text/html")) {
 		reply.header("Cache-Control", "no-cache");
 	} else if (path.startsWith("/css/") || path.startsWith("/js/")) {
-		reply.header("Cache-Control", "no-cache");
+		reply.header("Cache-Control", "public, max-age=600, stale-while-revalidate=604800");
 	} else if (path.startsWith("/assets/data/")) {
-		reply.header("Cache-Control", "no-store");
+		reply.header("Cache-Control", "public, max-age=300, stale-while-revalidate=86400");
 	} else if (path.startsWith("/assets/images/") || path.startsWith("/assets/fonts/")) {
 		reply.header("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
 	}
@@ -906,7 +912,6 @@ fastify.addHook("onSend", (req, reply, payload, done) => {
 	};
 	for (const [ext, mime] of Object.entries(brotliTypes)) {
 		if (path.endsWith(ext)) {
-			reply.header("Content-Type", mime).removeHeader("Content-Encoding");
 			reply.header("Content-Type", mime).header("Content-Encoding", "br");
 			break;
 		}

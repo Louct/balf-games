@@ -96,6 +96,10 @@ body {
   font-weight: 900;
   letter-spacing: -2px;
   margin-bottom: 6px;
+  background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 65%, white));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .dark-subtitle {

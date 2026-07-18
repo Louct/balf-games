@@ -52,7 +52,7 @@
                 <div class="ep-btns" id="epBtns"></div>
             </div>
             <div class="player-wrap">
-                <iframe id="player" sandbox="allow-scripts allow-same-origin allow-forms" allowfullscreen allow="autoplay; fullscreen; encrypted-media"></iframe>
+                <iframe id="player" allowfullscreen allow="autoplay; fullscreen; encrypted-media"></iframe>
                 <div class="player-status hidden" id="playerStatus">Loading provider…</div>
             </div>
         </div>
@@ -297,6 +297,35 @@
             setIframe();
         }
 
+        function blockAds(iframe) {
+            try {
+                var win = iframe.contentWindow;
+                if (!win) return;
+                win.open = function() { return null; };
+                var doc = win.document;
+                doc.addEventListener("click", function(e) {
+                    var a = e.target.closest ? e.target.closest("a") : null;
+                    if (a && a.target && a.target !== "_self") {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }
+                }, true);
+                var obs = new MutationObserver(function(muts) {
+                    muts.forEach(function(m) {
+                        m.addedNodes.forEach(function(n) {
+                            if (n.tagName === "IFRAME" || n.tagName === "SCRIPT") {
+                                var s = (n.src || "").toLowerCase();
+                                if (s && !s.includes(location.hostname) && !s.includes("player") && !s.includes("embed")) {
+                                    n.remove();
+                                }
+                            }
+                        });
+                    });
+                });
+                obs.observe(doc.documentElement || doc.body, { childList: true, subtree: true });
+            } catch(e) {}
+        }
+
         async function setIframe() {
             if (!currentItem) return;
             var idx = parseInt(sourceSel.value) || 0;
@@ -310,15 +339,9 @@
             playerStatus.textContent = "Loading provider…";
             playerStatus.classList.remove("hidden");
 
-            if (src.name === "2Embed") {
-                player.removeAttribute("sandbox");
-            } else {
-                player.setAttribute("sandbox", "allow-scripts allow-same-origin allow-forms");
-            }
-
-            playerStatus.classList.add("hidden");
             player.onload = function() {
                 playerStatus.classList.add("hidden");
+                blockAds(player);
             };
             player.src = proxyUrl;
         }
