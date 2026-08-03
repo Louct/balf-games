@@ -24,8 +24,8 @@
 		"ws": "^8.21.1"
 	},
 	"devDependencies": {
-		"eslint": "^10.7.0",
-		"prettier": "^3.9.5"
+		"eslint": "^10.8.0",
+		"prettier": "^3.9.6"
 	},
 	"packageManager": "pnpm@10.32.1"
 }
