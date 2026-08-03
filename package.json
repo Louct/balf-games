@@ -13,7 +13,7 @@
 	},
 	"license": "GNU AFFERO",
 	"dependencies": {
-		"@fastify/static": "^9.3.0",
+		"@fastify/static": "^10.1.2",
 		"@mercuryworkshop/bare-mux": "^2.1.9",
 		"@mercuryworkshop/epoxy-transport": "^3.0.1",
 		"@mercuryworkshop/libcurl-transport": "^1.5.2",
