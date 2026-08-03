@@ -20,7 +20,7 @@
 		"@mercuryworkshop/scramjet": "^1.1.0",
 		"@mercuryworkshop/wisp-js": "^0.4.1",
 		"ajv": "^8.20.0",
-		"fastify": "^5.10.0",
+		"fastify": "^5.11.0",
 		"ws": "^8.21.1"
 	},
 	"devDependencies": {
