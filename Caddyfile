@@ -120,6 +120,12 @@ https:// {
 		file_server browse
 	}
 
+	# gpt.crax.lol — crax-gpt (OpenAI-compatible proxy + chat UI)
+	@craxgpt host gpt.crax.lol
+	handle @craxgpt {
+		reverse_proxy http://127.0.0.1:3002
+	}
+
 	# WebSocket proxy
 	@wsproxy path_regexp wsproxy ^/(wsproxy|tsunamis/wsproxy)/(([^/]+\.)?(veck\.io|growden\.io|tsunamis\.io|stealnow\.io|luckyblocks\.io|2v2\.io))(/.*)$
 	handle @wsproxy {
