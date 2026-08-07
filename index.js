@@ -12,11 +12,19 @@ import fastifyStatic from "@fastify/static";
 import { WebSocket, WebSocketServer } from "ws";
 import { server as wisp, logging } from "@mercuryworkshop/wisp-js/server";
 import { scramjetPath } from "@mercuryworkshop/scramjet/path";
-import { libcurlPath } from "@mercuryworkshop/libcurl-transport";
 import { baremuxPath } from "@mercuryworkshop/bare-mux/node";
 
 const _require = createRequire(import.meta.url);
 const epoxypath = dirname(_require.resolve("@mercuryworkshop/epoxy-transport"));
+// libcurl-transport 2.0.5 dropped the libcurlPath helper entirely — the whole
+// package was restructured from "ships a static bundle + a path export" to
+// "a single ProxyTransport class" (dist/index.mjs default-exports
+// LibcurlClient). The frontend (public/js/load.js) only ever dynamically
+// imports /libcurl/index.mjs and uses whatever it default-exports, so this
+// still works — it just needs the same dirname(require.resolve(...)) pattern
+// epoxypath already uses one line up, since the package itself no longer
+// hands us the path directly.
+const libcurlPath = dirname(_require.resolve("@mercuryworkshop/libcurl-transport"));
 const scryptAsync = promisify(scrypt);
 
 const publicpath = fileURLToPath(new URL("./public/", import.meta.url));
