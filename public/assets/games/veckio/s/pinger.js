@@ -1,14 +1,14 @@
 const servers = [
-    'aetheris.win/proxy/veck-usa-1',
-    'aetheris.win/proxy/veck-usa-2',
-    'aetheris.win/proxy/veck-usa-3',
-    'aetheris.win/proxy/veck-usa-4',
-    'aetheris.win/proxy/veck-usa-5',
-    'aetheris.win/proxy/veck-fra-1',
-    'aetheris.win/proxy/veck-fra-2',
-    'aetheris.win/proxy/veck-fra-3',
-    'aetheris.win/proxy/veck-asia-1',
-    'aetheris.win/proxy/veck-asia-2',
+    location.host + '/proxy/veck-usa-1',
+    location.host + '/proxy/veck-usa-2',
+    location.host + '/proxy/veck-usa-3',
+    location.host + '/proxy/veck-usa-4',
+    location.host + '/proxy/veck-usa-5',
+    location.host + '/proxy/veck-fra-1',
+    location.host + '/proxy/veck-fra-2',
+    location.host + '/proxy/veck-fra-3',
+    location.host + '/proxy/veck-asia-1',
+    location.host + '/proxy/veck-asia-2',
 ];
 
 function getRandomServer() {

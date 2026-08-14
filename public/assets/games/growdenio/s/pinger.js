@@ -1,6 +1,6 @@
 const servers = [
-    'aetheris.win/proxy/fra-1',
-    'aetheris.win/proxy/fra-2'
+    location.host + '/proxy/fra-1',
+    location.host + '/proxy/fra-2'
 ];
 
 function getRandomServer() {

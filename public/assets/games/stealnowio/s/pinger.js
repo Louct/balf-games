@@ -1,5 +1,5 @@
 const servers = [
-    'aetheris.win/proxy/stealnow-usa-1',
+    location.host + '/proxy/stealnow-usa-1',
 ];
 
 function getRandomServer() {

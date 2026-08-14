@@ -3,7 +3,7 @@
 
 <head>
 	<meta charset="utf-8">
-    <base href="https://cdn.jsdelivr.net/gh/mynamescrax/gamesforaetheris@main/budgiesbugshop/">
+    <base href="https://cdn.statically.io/gl/mynamescrax/gamesforaetheris/main/budgiesbugshop/">
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 	<title>Budgie's Bug Shop</title>
 	<style>
@@ -87,7 +87,7 @@
 		<!-- Patch fetch and XHR to redirect StreamingAssets requests to CDN -->
 		<script>
 		(function() {
-		    const CDN_BASE = 'https://cdn.jsdelivr.net/gh/mynamescrax/gamesforaetheris@main/budgiesbugshop/StreamingAssets/';
+		    const CDN_BASE = 'https://cdn.statically.io/gl/mynamescrax/gamesforaetheris/main/budgiesbugshop/StreamingAssets/';
 
 		    function patchUrl(url) {
 		        if (typeof url === 'string' && url.includes('StreamingAssets') && !url.startsWith('https://')) {
@@ -129,7 +129,7 @@
 		        { name: 'budgies-bug-shop-demo-web.data.br', parts: 2 },
 		        { name: 'budgies-bug-shop-demo-web.wasm.br', parts: 3 },
 		    ],
-		    basePath: 'https://cdn.jsdelivr.net/gh/mynamescrax/gamesforaetheris@main/budgiesbugshop/Build/',
+		    basePath: 'https://cdn.statically.io/gl/mynamescrax/gamesforaetheris/main/budgiesbugshop/Build/',
 		    debug: true
 		};
 		</script>
@@ -141,7 +141,7 @@ var config = {
     dataUrl: "Build/budgies-bug-shop-demo-web.data.br",
     frameworkUrl: "Build/budgies-bug-shop-demo-web.framework.js",
     codeUrl: "Build/budgies-bug-shop-demo-web.wasm.br",
-    streamingAssetsUrl: "https://cdn.jsdelivr.net/gh/mynamescrax/gamesforaetheris@main/budgiesbugshop/StreamingAssets",
+    streamingAssetsUrl: "https://cdn.statically.io/gl/mynamescrax/gamesforaetheris/main/budgiesbugshop/StreamingAssets",
     companyName: "Moon Lagoon",
     productName: "Budgie's Bug Shop",
     productVersion: "0.1.0",
