@@ -120,21 +120,11 @@ document.addEventListener("DOMContentLoaded", function () {
     highlighttransport(name);
 
     var status = document.getElementById("transport-status");
-
-    if (typeof BareMux !== "undefined" && window.__aetherisTransportConfig) {
-      var wispurl = (location.protocol === "https:" ? "wss" : "ws") + "://" + location.host + "/wisp/";
-      var tc = window.__aetherisTransportConfig(wispurl);
-      var conn = new BareMux.BareMuxConnection("/baremux/worker.js");
-      conn.setTransport(tc.path, tc.args)
-        .then(function () {
-          if (status) status.textContent = "switched to " + name + ". takes effect on next proxy use.";
-        })
-        .catch(function (err) {
-          if (status) status.textContent = "failed to switch: " + err.message;
-        });
-    } else {
-      if (status) status.textContent = "saved. takes effect on next page load.";
-    }
+    // scramjet v2 constructs a fresh transport per proxy launch (see
+    // scramjet-init.js) instead of pushing it into a long-lived bare-mux
+    // worker, so there's nothing to eagerly switch here — the localStorage
+    // pref just gets picked up the next time a proxy page starts.
+    if (status) status.textContent = "saved. takes effect on next proxy use.";
   };
 
   // --- desktop UA spoof toggle ---
@@ -463,7 +453,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // well-known databases that games create — fallback if indexedDB.databases() isn't available
   var KNOWN_DBS = [
-    "$scramjet", "/idbfs", "/idbfs-test", "/userfs",
+    "$scramjet", "__scramjet_controller", "/idbfs", "/idbfs-test", "/userfs",
     "CachedXMLHttpRequests", "UnityCache", "firebase-heartbeat-database",
     "firebaseLocalStorageDb", "gameFilesDB", "localforage",
   ];

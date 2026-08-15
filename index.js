@@ -12,19 +12,23 @@ import fastifyStatic from "@fastify/static";
 import { WebSocket, WebSocketServer } from "ws";
 import { server as wisp, logging } from "@mercuryworkshop/wisp-js/server";
 import { scramjetPath } from "@mercuryworkshop/scramjet/path";
-import { baremuxPath } from "@mercuryworkshop/bare-mux/node";
 
 const _require = createRequire(import.meta.url);
 const epoxypath = dirname(_require.resolve("@mercuryworkshop/epoxy-transport"));
 // libcurl-transport 2.0.5 dropped the libcurlPath helper entirely — the whole
 // package was restructured from "ships a static bundle + a path export" to
 // "a single ProxyTransport class" (dist/index.mjs default-exports
-// LibcurlClient). The frontend (public/js/load.js) only ever dynamically
-// imports /libcurl/index.mjs and uses whatever it default-exports, so this
-// still works — it just needs the same dirname(require.resolve(...)) pattern
-// epoxypath already uses one line up, since the package itself no longer
-// hands us the path directly.
+// LibcurlClient). The frontend (public/js/scramjet-init.js) only ever
+// dynamically imports /libcurl/index.mjs and uses whatever it default-exports,
+// so this still works — it just needs the same dirname(require.resolve(...))
+// pattern epoxypath already uses one line up, since the package itself no
+// longer hands us the path directly.
 const libcurlPath = dirname(_require.resolve("@mercuryworkshop/libcurl-transport"));
+// scramjet-controller (v2) doesn't export a path helper either — same
+// dirname(require.resolve(...)) trick as libcurl above. require.resolve
+// follows the package's "main"/"exports" field to dist/controller-external.mjs,
+// so dirname(...) is already the dist/ folder we need to serve statically.
+const scramjetControllerPath = dirname(_require.resolve("@mercuryworkshop/scramjet-controller"));
 const scryptAsync = promisify(scrypt);
 
 const publicpath = fileURLToPath(new URL("./public/", import.meta.url));
@@ -927,7 +931,7 @@ fastify.addHook("onSend", (req, reply, payload, done) => {
 	if (path.endsWith(".loader.js")) reply.header("Content-Type", "application/javascript");
 	if (path.endsWith(".wasm"))      reply.header("Content-Type", "application/wasm");
 
-	if (/\/(scram|libcurl|baremux)\//.test(req.url)) {
+	if (/\/(scramjet|controller|libcurl)\//.test(req.url)) {
 		reply.header("Cross-Origin-Resource-Policy", "cross-origin");
 		reply.header("Access-Control-Allow-Origin", "*");
 	}
@@ -952,11 +956,116 @@ fastify.get("/epoxy/index.mjs", (_req, reply) => {
 	reply.type("application/javascript").send(patchedepoxy);
 });
 
+// scramjet 2.0.67-alpha.2's History.prototype.pushState/replaceState patch
+// does `String(ctx.args[2])` unconditionally — when a router omits the url
+// arg (very common: `history.replaceState(state, title)`), that's
+// `String(undefined)`, the literal three-letter string "undefined", which
+// then gets treated as a real relative URL and rewritten onto the proxied
+// site's origin (e.g. https://example.com/undefined). Every SPA whose router
+// makes that call renders its own "page not found" for a route literally
+// named "undefined". Fixed upstream the day after this alpha was published
+// (MercuryWorkshop/scramjet@98c1864, "[core] fix undefined popping up in
+// history") but never republished to npm — patch the one-line regression at
+// serve time the same way the epoxy fix above does, instead of forking the
+// package or waiting on a new alpha release.
+// scramjet's htmlRules strips `integrity` from <script>/<link> tags by
+// setting the attribute to "" instead of removing it outright (unlike the
+// adjacent nonce/csp rule right next to it in the same array, which does
+// `fn: () => null` and gets fully removed). An empty-but-present `integrity`
+// attribute is supposed to mean "no SRI check" per spec, and a synthetic
+// same-shape test confirms Chromium treats it that way — but real sites
+// (confirmed on discord.com, a Webflow-hosted page with 2MB+ stylesheets)
+// still get their CSS/JS blocked with a computed-hash mismatch. Since we
+// necessarily rewrite url()/@import references inside CSS (and JS bodies),
+// any original integrity hash can never validate again regardless — so
+// match the nonce/csp rule's approach and remove the attribute entirely
+// instead of leaving an empty one behind.
+let patchedscramjetcore = null;
+fastify.get("/scramjet/scramjet.js", (_req, reply) => {
+	if (!patchedscramjetcore) {
+		let raw = readFileSync(join(scramjetPath, "scramjet.js"), "utf8");
+
+		const undefinedhistorybroken = "s=(0,n.Qf)(t.args[2]);";
+		if (!raw.includes(undefinedhistorybroken)) {
+			console.warn("[scramjet-patch] expected minified history.ts pattern not found — shipping that part unpatched (did the alpha version change?)");
+		} else {
+			raw = raw.replace(undefinedhistorybroken, "s=t.args[2]?(0,n.Qf)(t.args[2]):void 0;");
+		}
+
+		const integritybroken = '{fn:()=>"",integrity:["script","link"]}';
+		if (!raw.includes(integritybroken)) {
+			console.warn("[scramjet-patch] expected minified htmlRules integrity pattern not found — shipping that part unpatched (did the alpha version change?)");
+		} else {
+			raw = raw.replace(integritybroken, '{fn:()=>null,integrity:["script","link"]}');
+		}
+
+		// The htmlRules fix above only covers *declarative* <script>/<link
+		// integrity="...">. Scramjet's fetch()/Request() proxies rewrite the
+		// URL argument to point at our (necessarily modified — url()/@import
+		// references get rewritten) proxied content, but never touch a
+		// caller-supplied `integrity` option in the init object. Any site
+		// calling fetch(url, { integrity: "sha384-..." }) would hit the
+		// browser's fetch-level SRI check against the *original* hash
+		// regardless of what the DOM says. Strip it the same way the HTML
+		// rewriter strips the declarative form. (Didn't end up being what was
+		// actually breaking discord.com — see the Link-header fix right below
+		// — but it's a real gap in its own right, worth keeping.)
+		const fetchintegritybroken = "let r=(0,n.Qf)(t.args[0]);t.args[0]=e.rewriteUrl(r,s(t.args[1]))";
+		if (!raw.includes(fetchintegritybroken)) {
+			console.warn("[scramjet-patch] expected minified fetch()/Request() rewrite pattern not found — shipping that part unpatched (did the alpha version change?)");
+		} else {
+			raw = raw.split(fetchintegritybroken).join(
+				fetchintegritybroken + ';if(t.args[1]&&t.args[1].integrity)t.args[1]={...t.args[1],integrity:""}'
+			);
+		}
+
+		// This is the one that actually explains discord.com's CSS not
+		// applying: the ORIGIN's document response itself carries a
+		// `Link: <url>; rel=preload; as=style; integrity="sha384-..."` HTTP
+		// response header (Webflow emits these for critical-CSS preloading).
+		// rewriteResponseHeaders() rewrites the <url> inside each Link-header
+		// entry to point at our (necessarily modified) proxied content, but
+		// never strips the `integrity=` parameter riding along with it — so
+		// the browser preloads our rewritten URL while still holding it to
+		// the original, now-mismatched hash, entirely independent of the
+		// <link> tag's own (correctly-stripped) integrity attribute. Strip
+		// `integrity=...` out of the header value after the URL rewrite.
+		const linkheaderintegritybroken = 'A.replace(/<([^>]+)>/gi,(e,t)=>`<${(0,i.Oy)(t,l,c)}>`));s.set("link",t)}';
+		if (!raw.includes(linkheaderintegritybroken)) {
+			console.warn("[scramjet-patch] expected minified Link-header rewrite pattern not found — shipping that part unpatched (did the alpha version change?)");
+		} else {
+			raw = raw.replace(
+				linkheaderintegritybroken,
+				'A.replace(/<([^>]+)>/gi,(e,t)=>`<${(0,i.Oy)(t,l,c)}>`).replace(/;\\s*integrity\\s*=\\s*(?:"[^"]*"|\'[^\']*\'|[^;,]*)/gi,""));s.set("link",t)}'
+			);
+		}
+
+		patchedscramjetcore = raw;
+	}
+	reply.type("application/javascript").send(patchedscramjetcore);
+});
+
+// controller.sw.js used to be patched here to buffer the request body before
+// relaying it to the page-side Controller. That work moved into public/sw.js
+// (buildrouteevent), which reads the body with .arrayBuffer() and hands
+// route() an ArrayBuffer directly — stock route() already accepts an
+// ArrayBuffer body and already puts it in the postMessage transfer list, so
+// there is nothing left to rewrite here. Doing it on our side also fixes the
+// case the patch could never reach: Request.prototype.body (a request body
+// ReadableStream) is Chromium-only, so on other engines route()'s read of
+// event.request.body yielded undefined and POSTs went out empty regardless of
+// what this patch did to the relay. Serve the file untouched.
+
 fastify.register(fastifyStatic, { root: publicpath, decorateReply: true });
-fastify.register(fastifyStatic, { root: scramjetPath, prefix: "/scram/", decorateReply: false });
+// scramjet v2's controller package hardcodes these two path prefixes as its
+// defaults (Config.scramjetPath / Config.injectPath / Config.wasmPath in
+// @mercuryworkshop/scramjet-controller) — keep them as-is rather than
+// overriding, so every call site that builds a Controller without a custom
+// `config` just works.
+fastify.register(fastifyStatic, { root: scramjetPath, prefix: "/scramjet/", decorateReply: false });
+fastify.register(fastifyStatic, { root: scramjetControllerPath, prefix: "/controller/", decorateReply: false });
 fastify.register(fastifyStatic, { root: libcurlPath, prefix: "/libcurl/", decorateReply: false });
 fastify.register(fastifyStatic, { root: epoxypath, prefix: "/epoxy/", decorateReply: false });
-fastify.register(fastifyStatic, { root: baremuxPath, prefix: "/baremux/", decorateReply: false });
 fastify.setNotFoundHandler((_req, reply) => reply.code(404).type("text/html").sendFile("404.html"));
 
 

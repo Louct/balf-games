@@ -259,6 +259,7 @@
             var dbNames = [];
             try { dbNames = JSON.parse(localStorage.getItem('idbNames') || '[]'); } catch(_) {}
             if (dbNames.indexOf('scramjet-config') === -1) dbNames.push('scramjet-config');
+            if (dbNames.indexOf('__scramjet_controller') === -1) dbNames.push('__scramjet_controller');
             dbNames.forEach(function(name) {
                 steps.push(new Promise(function(resolve) {
                     var req = indexedDB.deleteDatabase(name);

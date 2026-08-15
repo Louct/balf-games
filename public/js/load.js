@@ -66,39 +66,19 @@
   async function startproxy() {
     if (proxy) return;
 
-    if (typeof $scramjetLoadController !== "function") {
+    if (!window.aetherisProxy) {
       await new Promise(function(resolve, reject) {
         var waited = 0;
         var t = setInterval(function() {
           waited += 100;
-          if (typeof $scramjetLoadController === "function") { clearInterval(t); resolve(); }
+          if (window.aetherisProxy) { clearInterval(t); resolve(); }
           else if (waited >= 10000) { clearInterval(t); reject(new Error("Scramjet failed to load")); }
         }, 100);
       });
     }
-    var scram = $scramjetLoadController();
-    var ScramjetController = scram.ScramjetController;
-    proxy = new ScramjetController({
-      files: {
-        wasm: "/scram/scramjet.wasm.wasm",
-        all:  "/scram/scramjet.all.js",
-        sync: "/scram/scramjet.sync.js"
-      }
-    });
 
-    await proxy.init();
+    proxy = await window.aetherisProxy.getController();
     syncuaspoof();
-
-    var conn = new BareMux.BareMuxConnection("/baremux/worker.js");
-    await registersw();
-
-    var wispurl = (location.protocol === "https:" ? "wss" : "ws") + "://" + location.host + "/wisp/";
-    var tc = window.__aetherisTransportConfig
-      ? window.__aetherisTransportConfig(wispurl)
-      : { path: "/libcurl/index.mjs", args: [{ websocket: wispurl }] };
-    if ((await conn.getTransport()) !== tc.path) {
-      await conn.setTransport(tc.path, tc.args);
-    }
   }
 
   async function loaditem(item) {
@@ -126,10 +106,11 @@
 
     if (isexternal && !item.noProxy) {
       await startproxy();
-      iframe = proxy.createFrame();
-      iframe.frame.style.cssText = "width:100%;height:100%;border:0;";
-      container.appendChild(iframe.frame);
-      await iframe.go(url);
+      var frameel = document.createElement("iframe");
+      frameel.style.cssText = "width:100%;height:100%;border:0;";
+      iframe = proxy.createFrame(frameel);
+      container.appendChild(frameel);
+      window.aetherisProxy.go(iframe, url);
     } else {
       var frame = document.createElement("iframe");
       frame.allowFullscreen = true;

@@ -69,119 +69,30 @@
     <link rel="stylesheet" href="./css/nav.css?v=3" />
     <link rel="stylesheet" href="./css/main.css?v=3" />
     <script src="register-sw.js" defer></script>
-    <script src="/scram/scramjet.all.js" defer></script>
-    <script src="/baremux/index.js" defer></script>
+    <script src="/scramjet/scramjet.js" defer></script>
+    <script src="/controller/controller.api.js" defer></script>
+    <script src="/js/scramjet-init.js"></script>
 
     <script>
-        (function() {
-          var REFRESH_KEY = "__bareMuxRefreshedAt";
-
-          function isbaremuxerr(args) {
-            for (var i = 0; i < args.length; i++) {
-              var v = args[i];
-              var s = (v && v.message) ? v.message : (typeof v === "string" ? v : "");
-              if (s && /bare-mux/i.test(s) && /SharedWorker|MessagePort/i.test(s)) return true;
-            }
-            return false;
-          }
-
-          function mayberefresh() {
-            var last = parseInt(sessionStorage.getItem(REFRESH_KEY) || "0", 10);
-            if (Date.now() - last < 10000) return;
-            sessionStorage.setItem(REFRESH_KEY, String(Date.now()));
-            location.reload();
-          }
-
-          window.addEventListener("error", function(ev) {
-            if (isbaremuxerr([ev.message, ev.error])) mayberefresh();
-          });
-          window.addEventListener("unhandledrejection", function(ev) {
-            if (isbaremuxerr([ev.reason])) mayberefresh();
-          });
-        })();
-    </script>
-
-    <script>
-        window.__aetherisTransportConfig = function(wispurl) {
-          var ua = navigator.userAgent;
-          var isapple = /iP(hone|ad|od)/.test(ua) ||
-            /Macintosh/.test(ua) ||
-            (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-          var preferred = localStorage.getItem("proxyTransport") || (isapple ? "epoxy" : "libcurl");
-          if (preferred === "epoxy") return { path: "/epoxy/index.mjs", args: [{ wisp: wispurl }] };
-          return { path: "/libcurl/index.mjs", args: [{ websocket: wispurl }] };
-        };
-    </script>
-
-    <script>
+        // Pre-warm the proxy controller so it's ready by the time the player
+        // opens a game (cheats.html/search.html/load.js each get their own
+        // Controller instance — this one just eats the cold-start cost early
+        // and shows a toast).
         document.addEventListener("DOMContentLoaded", function earlyinit() {
-          if (typeof BareMux === "undefined") {
-            console.warn("[init] BareMux not loaded yet, skipping");
+          if (!window.aetherisProxy) {
+            console.warn("[init] aetherisProxy helper not loaded yet, skipping pre-warm");
             return;
           }
 
-          try {
-            var wispurl =
-              (location.protocol === "https:" ? "wss" : "ws") +
-              "://" + location.host + "/wisp/";
-
-            var conn = new BareMux.BareMuxConnection("/baremux/worker.js");
-
-            var tc = window.__aetherisTransportConfig(wispurl);
-            conn.getTransport().then(function(current) {
-              if (current !== tc.path) {
-                conn.setTransport(tc.path, tc.args)
-                  .catch(function(err) { console.error("[init] setTransport failed:", err); });
-              }
-            }).catch(function(err) { console.error("[init] BareMux init failed:", err); });
-
-            window.__aetherisBareMux = conn;
-          } catch (err) {
-            console.error("[init] BareMux init failed:", err);
-          }
-
-          try {
-            if (typeof $scramjetLoadController === "function") {
-              var scram = $scramjetLoadController();
-              var ScramjetController = scram.ScramjetController;
-              var scramjet = new ScramjetController({
-                files: {
-                  wasm: "/scram/scramjet.wasm.wasm",
-                  all:  "/scram/scramjet.all.js",
-                  sync: "/scram/scramjet.sync.js",
-                },
-              });
-
-              function initsj() {
-                scramjet.init().then(function() {
-                  window.__aetherisScramjet = scramjet;
-                  var t = document.getElementById("sj-toast");
-                  if (t) {
-                    t.classList.add("show");
-                    setTimeout(function() { t.classList.remove("show"); }, 3000);
-                  }
-                }).catch(function(err) {
-                  console.error("[init] Scramjet init failed:", err);
-                });
-              }
-
-              try {
-                var idbcheck = indexedDB.open('scramjet');
-                idbcheck.onsuccess = function(e) {
-                  var db = e.target.result;
-                  var ok = db.objectStoreNames.contains('config');
-                  db.close();
-                  if (ok) { initsj(); return; }
-                  // 'config' store missing — delete the broken DB then init fresh
-                  var del = indexedDB.deleteDatabase('scramjet');
-                  del.onsuccess = del.onerror = function() { initsj(); };
-                };
-                idbcheck.onerror = function() { initsj(); };
-              } catch (_) { initsj(); }
+          window.aetherisProxy.getController().then(function() {
+            var t = document.getElementById("sj-toast");
+            if (t) {
+              t.classList.add("show");
+              setTimeout(function() { t.classList.remove("show"); }, 3000);
             }
-          } catch (err) {
-            console.error("[init] Scramjet init failed:", err);
-          }
+          }).catch(function(err) {
+            console.error("[init] Scramjet pre-warm failed:", err);
+          });
         }, { once: true });
     </script>
 

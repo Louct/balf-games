@@ -15,8 +15,9 @@
 
     <script src="./js/theme.js?v=2"></script>
 
-    <script src="/scram/scramjet.all.js"></script>
-    <script src="/baremux/index.js"></script>
+    <script src="/scramjet/scramjet.js" defer></script>
+    <script src="/controller/controller.api.js" defer></script>
+    <script src="/js/scramjet-init.js"></script>
     <script src="register-sw.js" defer></script>
 <script defer src="./js/preload.js"></script>
 
@@ -178,60 +179,27 @@
         var currentframe = null;
         var lasturl = null;
 
-        async function startproxy() {
-          if (proxy) return proxy;
-
-          if (typeof $scramjetLoadController !== "function") {
-            throw new Error("Scramjet not loaded — /scram/scramjet.all.js missing?");
-          }
-
-          var scram = $scramjetLoadController();
-          var ScramjetController = scram.ScramjetController;
-          proxy = new ScramjetController({
-            files: {
-              wasm: "/scram/scramjet.wasm.wasm",
-              all:  "/scram/scramjet.all.js",
-              sync: "/scram/scramjet.sync.js",
-            },
+        async function waitforaetherisproxy() {
+          if (window.aetherisProxy) return;
+          // scramjet-init.js is a deferred script, so it hasn't necessarily run
+          // yet if this fires from an inline <script> (e.g. the ?q= auto-search
+          // below) that executes synchronously while the document is still
+          // being parsed — defer scripts only run after parsing finishes.
+          await new Promise(function(resolve, reject) {
+            var waited = 0;
+            var t = setInterval(function() {
+              waited += 100;
+              if (window.aetherisProxy) { clearInterval(t); resolve(); }
+              else if (waited >= 10000) { clearInterval(t); reject(new Error("Scramjet init helper failed to load — /js/scramjet-init.js missing?")); }
+            }, 100);
           });
-
-          await proxy.init();
-
-          if (typeof BareMux === "undefined") {
-            throw new Error("BareMux not loaded — /baremux/index.js missing?");
-          }
-
-          var connection = new BareMux.BareMuxConnection("/baremux/worker.js");
-          var wispurl = (location.protocol === "https:" ? "wss" : "ws") +
-                        "://" + location.host + "/wisp/";
-          var tc = window.__aetherisTransportConfig
-            ? window.__aetherisTransportConfig(wispurl)
-            : { path: "/libcurl/index.mjs", args: [{ websocket: wispurl }] };
-          if ((await connection.getTransport()) !== tc.path) {
-            await connection.setTransport(tc.path, tc.args);
-          }
-
-          return proxy;
         }
 
-        async function waitforsw() {
-          if (!("serviceWorker" in navigator)) {
-            throw new Error("Service workers aren't supported in this browser.");
-          }
-
-          await navigator.serviceWorker.ready;
-          if (navigator.serviceWorker.controller) return;
-
-          await Promise.race([
-            new Promise(function(resolve) {
-              navigator.serviceWorker.addEventListener("controllerchange", resolve, { once: true });
-            }),
-            new Promise(function(_, reject) {
-              setTimeout(function() {
-                reject(new Error("Service worker didn't take control. Try reloading the page."));
-              }, 5000);
-            }),
-          ]);
+        async function startproxy() {
+          if (proxy) return proxy;
+          await waitforaetherisproxy();
+          proxy = await window.aetherisProxy.getController();
+          return proxy;
         }
 
         function resolveurl(input) {
@@ -249,12 +217,7 @@
         }
 
         function mountframe(p, resultarea) {
-          var handle = p.createFrame();
-          var el = handle.frame || handle;
-          if (!(el instanceof HTMLElement)) {
-            throw new Error("Scramjet didn't return a usable frame element.");
-          }
-
+          var el = document.createElement("iframe");
           el.setAttribute("allowfullscreen", "");
           el.setAttribute("referrerpolicy", "no-referrer");
           el.style.cssText = "width:100%;height:100%;border:0;background:#fff;display:block;";
@@ -264,7 +227,7 @@
           });
           resultarea.appendChild(el);
 
-          return handle;
+          return p.createFrame(el);
         }
 
         async function gourl(input) {
@@ -288,15 +251,14 @@
           loader.textContent = "Loading…";
 
           try {
-            await waitforsw();
             var p = await startproxy();
 
             currentframe = mountframe(p, resultarea);
 
-            await currentframe.go(finalurl);
+            window.aetherisProxy.go(currentframe, finalurl);
             lasturl = finalurl;
 
-            var frameel = currentframe.frame || currentframe;
+            var frameel = currentframe.element;
             var hidden = false;
             var hide = function() {
               if (hidden) return;
@@ -316,7 +278,7 @@
 
         function getframeurl() {
           if (currentframe) {
-            var el = currentframe.frame || currentframe;
+            var el = currentframe.element;
             try {
               var href = el.contentWindow && el.contentWindow.location.href;
               if (href && href !== "about:blank") return href;
@@ -359,7 +321,8 @@
 
         function toolbarrefresh() {
           if (currentframe && lasturl) {
-            currentframe.go(lasturl).catch(function(err) { console.error("refresh failed:", err); });
+            try { window.aetherisProxy.go(currentframe, lasturl); }
+            catch (err) { console.error("refresh failed:", err); }
           }
         }
 

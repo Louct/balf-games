@@ -16,8 +16,9 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 
     <script src="register-sw.js" defer></script>
-    <script src="/scram/scramjet.all.js"></script>
-    <script src="/baremux/index.js"></script>
+    <script src="/scramjet/scramjet.js" defer></script>
+    <script src="/controller/controller.api.js" defer></script>
+    <script src="/js/scramjet-init.js"></script>
 <script defer src="./js/preload.js"></script>
 
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -222,35 +223,8 @@
           return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
         }
 
-        var proxyinst = null;
-
         async function getproxy() {
-          if (proxyinst) return proxyinst;
-
-          var scram = $scramjetLoadController();
-          var ScramjetController = scram.ScramjetController;
-          proxyinst = new ScramjetController({
-            files: {
-              wasm: "/scram/scramjet.wasm.wasm",
-              all:  "/scram/scramjet.all.js",
-              sync: "/scram/scramjet.sync.js",
-            },
-          });
-
-          await proxyinst.init();
-
-          var connection = new BareMux.BareMuxConnection("/baremux/worker.js");
-          await registersw();
-
-          var wispurl = (location.protocol === "https:" ? "wss" : "ws") + "://" + location.host + "/wisp/";
-          var tc = window.__aetherisTransportConfig
-            ? window.__aetherisTransportConfig(wispurl)
-            : { path: "/libcurl/index.mjs", args: [{ websocket: wispurl }] };
-          if ((await connection.getTransport()) !== tc.path) {
-            await connection.setTransport(tc.path, tc.args);
-          }
-
-          return proxyinst;
+          return window.aetherisProxy.getController();
         }
 
         async function openinproxy(url, displayname) {
@@ -281,12 +255,13 @@
           document.getElementById("cheat-close-btn").addEventListener("click", function() { overlay.remove(); });
 
           try {
-            var p     = await getproxy();
-            var frame = p.createFrame();
-            frame.frame.style.cssText = "width:100%;height:100%;border:0;";
+            var p       = await getproxy();
+            var frameel = document.createElement("iframe");
+            frameel.style.cssText = "width:100%;height:100%;border:0;";
+            var frame = p.createFrame(frameel);
             contentarea.innerHTML = "";
-            contentarea.appendChild(frame.frame);
-            await frame.go(url);
+            contentarea.appendChild(frameel);
+            window.aetherisProxy.go(frame, url);
           } catch (err) {
             console.error("proxy load failed:", err);
             contentarea.innerHTML = '<p style="color:#f87171;padding:20px;">failed to load through proxy: ' + err.message + '</p>';
