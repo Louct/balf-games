@@ -107,7 +107,7 @@
     <div id="modal-del" class="mbg" style="display:none;" onclick="bgclose(event,'modal-del')">
         <div class="modal">
             <h3>⚠️ Delete account?</h3>
-            <p>this deletes your account and all your dms. frees your ip so you can register again.</p>
+            <p>this deletes your account and all your dms. frees your device so you can register again.</p>
             <div class="mrow">
                 <button class="mbtn danger" onclick="confirmdelete()">delete</button>
                 <button class="mbtn ghost" onclick="closemodal('modal-del')">cancel</button>
@@ -118,7 +118,7 @@
     <div id="modal-wipe" class="mbg" style="display:none;" onclick="bgclose(event,'modal-wipe')">
         <div class="modal">
             <h3>🗑 Delete all accounts?</h3>
-            <p>deletes every account from your ip. you can register again right after.</p>
+            <p>deletes the account created on this device (you need to be logged in).</p>
             <div id="wipe-ok" class="ok-msg" style="display:none;"></div>
             <div class="mrow">
                 <button class="mbtn warn" onclick="confirmwipe()">yeah, delete all</button>
@@ -127,6 +127,7 @@
         </div>
     </div>
 
+    <script src="./js/dm-shared.js"></script>
     <script src="./js/chat.js"></script>
 </body>
 

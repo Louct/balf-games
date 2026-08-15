@@ -18,6 +18,7 @@
 
     <script src="register-sw.js" defer></script>
 <script defer src="./js/preload.js"></script>
+<script src="./js/dm-shared.js"></script>
 
     <script src="./js/theme.js?v=2"></script>
     <script src="./js/navigation.js"></script>
@@ -463,26 +464,7 @@
     </div>
 
     <script>
-        async function getdeviceid() {
-          var stored = localStorage.getItem("dmDeviceId");
-          if (stored && /^[a-f0-9]{64}$/.test(stored)) return stored;
-          var hex;
-          if (crypto.getRandomValues) {
-            var bytes = new Uint8Array(32);
-            crypto.getRandomValues(bytes);
-            hex = Array.from(bytes).map(function(b) { return b.toString(16).padStart(2, "0"); }).join("");
-          } else {
-            var raw = [
-              navigator.userAgent, navigator.language, Date.now(), Math.random(),
-              screen.width, screen.height,
-              Intl.DateTimeFormat().resolvedOptions().timeZone,
-            ].join("|");
-            var buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(raw));
-            hex = Array.from(new Uint8Array(buf)).map(function(b) { return b.toString(16).padStart(2, "0"); }).join("");
-          }
-          localStorage.setItem("dmDeviceId", hex);
-          return hex;
-        }
+        // getdeviceid lives in ./js/dm-shared.js (loaded in <head>)
 
         var reporttype = "";
 

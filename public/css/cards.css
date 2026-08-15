@@ -14,23 +14,28 @@
 }
 
 .card-item {
-  width: 100%;
-  max-width: 190px;
-  text-align: center;
-  cursor: pointer;
-  border-radius: 18px;
-  position: relative;
-  z-index: 1;
-  transform-origin: center center;
-  transform: translateY(0) scale(1);
-  backface-visibility: hidden;
-  isolation: isolate;
-  overflow: visible;
-  transition:
-    transform 0.22s ease-out,
-    box-shadow 0.22s ease-out,
-    z-index 0s 0.22s;
-  animation: cardIn 0.3s ease both;
+	width: 100%;
+	max-width: 190px;
+	text-align: center;
+	cursor: pointer;
+	border-radius: 18px;
+	position: relative;
+	z-index: 1;
+	transform-origin: center center;
+	transform: translateY(0) scale(1);
+	backface-visibility: hidden;
+	isolation: isolate;
+	overflow: visible;
+	transition:
+		transform 0.22s ease-out,
+		box-shadow 0.22s ease-out,
+		z-index 0s 0.22s;
+	animation: cardIn 0.3s ease both;
+	/* ~15k cards in the grid: skip layout+paint entirely for offscreen ones.
+	   `auto` in the intrinsic size lets the browser remember the real height
+	   once a card has been rendered, so scrolling stays smooth. */
+	content-visibility: auto;
+	contain-intrinsic-size: auto 240px;
 }
 
 .card-item img {

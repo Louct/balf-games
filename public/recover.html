@@ -105,6 +105,23 @@
             return;
           }
 
+          function deleteidbs() {
+            // match the service worker's recovery page (sw.js): clear the
+            // scramjet databases too, not just caches + registrations — a
+            // corrupt scramjet-config is a common reason recovery is needed
+            var dbNames = [];
+            try { dbNames = JSON.parse(localStorage.getItem("idbNames") || "[]"); } catch (_) {}
+            if (dbNames.indexOf("scramjet-config") === -1) dbNames.push("scramjet-config");
+            if (dbNames.indexOf("__scramjet_controller") === -1) dbNames.push("__scramjet_controller");
+            return Promise.all(dbNames.map(function(name) {
+              return new Promise(function(resolve) {
+                var req = indexedDB.deleteDatabase(name);
+                req.onsuccess = req.onerror = req.onblocked = function() { resolve(); };
+                setTimeout(resolve, 2000);
+              });
+            }));
+          }
+
           navigator.serviceWorker.getRegistrations()
             .then(function (regs) {
               return Promise.all(regs.map(function (r) { return r.unregister(); }));
@@ -114,6 +131,10 @@
             })
             .then(function (keys) {
               return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+            })
+            .then(function() {
+              try { localStorage.removeItem("idbNames"); } catch (_) {}
+              return deleteidbs();
             })
             .then(done)
             .catch(fail);

@@ -27,7 +27,7 @@ You need a VPS for this: the proxy needs a server and won't work on Vercel or si
 **you'll need:** [Node.js](https://nodejs.org) (>=20), [Git](https://git-scm.com/download), [pnpm](https://pnpm.io), [Caddy](https://caddyserver.com)
 
 ```bash
-git clone https://github.com/mynamescrax/aetheris
+git clone https://gitlab.com/mynamescrax/aetheris.git
 cd aetheris
 pnpm install
 ```
@@ -56,3 +56,7 @@ systemctl reload caddy
 ## credits
 
 Game files from [GN-Math](https://gn-math.dev) and [The Ultimate Game Stash](https://docs.google.com/document/d/1_FmH3BlSBQI7FGgAQL59-ZPe8eCxs35wel6JUyVaG8Q/preview?pli=1&pru=AAABnlARoYY*_5r087PNiPkXhHVGgjNYOA&tab=t.0). if you fork this, a star would be appreciated!
+
+## license
+
+AGPL-3.0-or-later — see [LICENSE](LICENSE).

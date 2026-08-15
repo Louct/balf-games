@@ -489,6 +489,23 @@
           if (window.visualViewport) window.visualViewport.addEventListener("resize", resize);
           resize();
         })();
+
+        // panic key — works while focus is on the shell itself; embedded app
+        // pages add the same listener via js/preload.js, and game/proxied
+        // pages get one injected by the service worker (see sw.js)
+        document.addEventListener("keydown", function(e) {
+          try {
+            var key = localStorage.getItem("panickey");
+            if (!key || e.key !== key) return;
+            // a single-character panic key would fire on every keystroke
+            // while typing in a text field — only let multi-char keys
+            // (Escape, F-keys, ...) through in that case
+            var t = e.target;
+            if (e.key.length === 1 && t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+            var url = localStorage.getItem("panicurl") || "https://classroom.google.com/";
+            location.replace(url);
+          } catch (_) {}
+        }, true);
     </script>
 </body>
 </html>

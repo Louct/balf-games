@@ -5,9 +5,12 @@
  * with Discord webhook alerts and periodic status reports.
  */
 
-import { execSync }        from "node:child_process";
+import { exec }             from "node:child_process";
 import { createWriteStream } from "node:fs";
-import { connect }         from "node:net";
+import { connect }          from "node:net";
+import { promisify }        from "node:util";
+
+const execAsync = promisify(exec);
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────────
 
@@ -28,8 +31,8 @@ const CONFIG = {
   appService:     process.env.APP_SERVICE       || "aetheris",
   logFile:        process.env.LOG_FILE          || "/var/log/monitor.log",
 
-  // How often to post a summary report to Discord (ms). Default: 15 minutes.
-  reportIntervalMs: parseInt(process.env.REPORT_INTERVAL || String(15 * 60)) * 1000,
+  // How often to post a summary report to Discord, in MINUTES. Default: 15.
+  reportIntervalMs: parseInt(process.env.REPORT_INTERVAL || "15") * 60 * 1000,
 };
 
 // ─── LOGGING ─────────────────────────────────────────────────────────────────
@@ -49,17 +52,28 @@ function log(msg) {
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
 
-function run(cmd) {
+// async exec — execSync blocked the event loop for up to its 15s timeout,
+// which could stack ticks on a slow box (pm2 daemon cold-start etc.)
+async function run(cmd) {
   try {
-    const out = execSync(cmd, { timeout: 15_000 }).toString().trim();
-    return { ok: true, out };
+    const { stdout } = await execAsync(cmd, { timeout: 15_000 });
+    return { ok: true, out: stdout.trim() };
   } catch (err) {
-    return { ok: false, out: err.message };
+    const out = String(err.stderr || err.message || "").trim();
+    return { ok: false, out: out.slice(0, 500) };
   }
 }
 
-function serviceActive(name) {
-  const { ok, out } = run(`systemctl is-active ${name}`);
+// the app runs under pm2 (see notes.md) — `pm2 pid` prints the pid, or 0
+// when the process is stopped/missing. systemd was retired when the stack
+// moved to pm2, so systemctl is only used for caddy below.
+async function pm2Active(name) {
+  const { ok, out } = await run(`pm2 pid ${name}`);
+  return ok && /^\d+$/.test(out) && parseInt(out, 10) > 0;
+}
+
+async function systemdActive(name) {
+  const { ok, out } = await run(`systemctl is-active ${name}`);
   return ok && out === "active";
 }
 
@@ -127,7 +141,9 @@ async function alertDown(url, reason) {
       description: `**${url}** is unreachable.`,
       color:       0xe74c3c,
       fields: [
-        { name: "Error",     value: reason,                        inline: true },
+        // Discord embed fields cap at 1024 chars — a longer error message
+        // would make the whole webhook 400 and the alert would be lost
+        { name: "Error",     value: String(reason).slice(0, 1000),  inline: true },
         { name: "Time",      value: new Date().toUTCString(),      inline: false },
       ],
       footer: { text: "Aetheris Uptime Monitor" },
@@ -240,12 +256,12 @@ async function recover(fallbackReachable) {
 
   if (type === "POSSIBLE_CADDY") {
     log("Running: systemctl reload caddy");
-    run("systemctl reload caddy");
+    await run("systemctl reload caddy");
     await sleep(2000);
 
-    if (!serviceActive("caddy")) {
+    if (!(await systemdActive("caddy"))) {
       log("Caddy not active. Running: systemctl start caddy");
-      const res = run("systemctl start caddy");
+      const res = await run("systemctl start caddy");
       log(`caddy start result: ${res.ok ? "ok" : "FAILED — " + res.out}`);
       await alertRecovery("Caddy", res.ok ? "systemctl start caddy → ok" : `FAILED: ${res.out}`);
     } else {
@@ -254,16 +270,28 @@ async function recover(fallbackReachable) {
     }
 
   } else {
-    if (!serviceActive(CONFIG.appService)) {
-      log(`Running: systemctl start ${CONFIG.appService}`);
-      const res = run(`systemctl start ${CONFIG.appService}`);
-      log(`${CONFIG.appService} start result: ${res.ok ? "ok" : "FAILED — " + res.out}`);
-      await alertRecovery("Node App", res.ok ? `systemctl start ${CONFIG.appService} → ok` : `FAILED: ${res.out}`);
+    // app-side recovery — pm2, not systemd (the old aetheris.service is
+    // disabled; see notes.md)
+    if (!(await pm2Active(CONFIG.appService))) {
+      log(`Running: pm2 restart ${CONFIG.appService}`);
+      const res = await run(`pm2 restart ${CONFIG.appService} --update-env`);
+      if (!res.ok) {
+        // not in the pm2 process list at all — start it fresh
+        log(`pm2 restart failed. Running: pm2 start index.js --name ${CONFIG.appService}`);
+        const res2 = await run(`pm2 start index.js --name ${CONFIG.appService} && pm2 save`);
+        log(`${CONFIG.appService} start result: ${res2.ok ? "ok" : "FAILED — " + res2.out}`);
+        await alertRecovery("Node App", res2.ok ? `pm2 start index.js --name ${CONFIG.appService} → ok` : `FAILED: ${res2.out}`);
+      } else {
+        log(`${CONFIG.appService} restart result: ok`);
+        await alertRecovery("Node App", `pm2 restart ${CONFIG.appService} → ok`);
+      }
     } else {
-      log(`Running: systemctl restart ${CONFIG.appService}`);
-      const res = run(`systemctl restart ${CONFIG.appService}`);
+      // pm2 knows the process but the port check failed — it's crash-looping
+      // or hung; restart it to be safe
+      log(`Running: pm2 restart ${CONFIG.appService}`);
+      const res = await run(`pm2 restart ${CONFIG.appService} --update-env`);
       log(`${CONFIG.appService} restart result: ${res.ok ? "ok" : "FAILED — " + res.out}`);
-      await alertRecovery("Node App", res.ok ? `systemctl restart ${CONFIG.appService} → ok` : `FAILED: ${res.out}`);
+      await alertRecovery("Node App", res.ok ? `pm2 restart ${CONFIG.appService} → ok` : `FAILED: ${res.out}`);
     }
   }
 }
@@ -283,7 +311,21 @@ const state = new Map(
 
 // ─── TICK ────────────────────────────────────────────────────────────────────
 
+let ticking = false;
+
 async function tick() {
+  // a slow tick (8s http timeouts + recovery with its sleeps) must never
+  // stack on top of a still-running one
+  if (ticking) return;
+  ticking = true;
+  try {
+    await tickinner();
+  } finally {
+    ticking = false;
+  }
+}
+
+async function tickinner() {
   const results = await Promise.all(
     CONFIG.domains.map(async url => {
       const result = await httpCheck(url, CONFIG.timeoutMs);
@@ -324,10 +366,16 @@ async function tick() {
     }
   }
 
-  if (failed.length > 0) {
+  // only take recovery action when EVERY domain is down — that means the box
+  // itself (caddy or the app). a partial outage means caddy is serving and
+  // the app answers for the other domains, so restarting anything globally
+  // would knock over the healthy domains for nothing. alert only.
+  if (failed.length > 0 && failed.length === CONFIG.domains.length) {
     const fallbackReachable = await tcpReachable(CONFIG.fallbackHost, CONFIG.fallbackPort);
     log(`Fallback (port ${CONFIG.fallbackPort}) reachable: ${fallbackReachable}`);
     await recover(fallbackReachable);
+  } else if (failed.length > 0) {
+    log(`Partial outage — ${failed.length}/${CONFIG.domains.length} domain(s) down, others healthy. Skipping global recovery.`);
   }
 }
 

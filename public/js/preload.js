@@ -76,3 +76,34 @@
     }
   });
 })();
+
+// keep the SW's in-memory ua-spoof flag in sync — the browser can recycle the
+// SW at any time, resetting its memory; settings.js and load.js also push this
+// but only from their own pages. cheap enough to do from every page load.
+(function() {
+  try {
+    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({
+        type: "aetheris-set-desktop-ua-spoof",
+        enabled: localStorage.getItem("spoofDesktopUA") === "true"
+      });
+    }
+  } catch (_) {}
+})();
+
+// panic key (app pages — game/proxied pages get the same listener injected by
+// the service worker's shims, see sw.js)
+(function() {
+  document.addEventListener("keydown", function(e) {
+    try {
+      var key = localStorage.getItem("panickey");
+      if (!key || e.key !== key) return;
+      // single-char panic keys don't fire while typing in a text field —
+      // they'd trigger on every keystroke otherwise
+      var t = e.target;
+      if (e.key.length === 1 && t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      var url = localStorage.getItem("panicurl") || "https://classroom.google.com/";
+      location.replace(url);
+    } catch (_) {}
+  }, true);
+})();

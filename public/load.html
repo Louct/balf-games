@@ -20,6 +20,7 @@
     <script src="/scramjet/scramjet.js" defer></script>
     <script src="/controller/controller.api.js" defer></script>
     <script src="/js/scramjet-init.js"></script>
+    <script src="./js/dm-shared.js"></script>
 
     <script>
     (function(){
@@ -444,8 +445,9 @@
           var data = e.data;
           if (!data) return;
 
-          // Chat unread badge
-          if (data.type === "chat-unread" && !chatopen) {
+          // Chat unread badge — same-origin only, otherwise any embedded
+          // (proxied/game) frame could spoof the badge count
+          if (e.origin === location.origin && data.type === "chat-unread" && !chatopen) {
             var badge = document.getElementById("chat-pill-badge");
             if (data.count > 0) {
               badge.textContent = data.count > 99 ? "99+" : data.count;
@@ -456,7 +458,10 @@
             return;
           }
 
-          // Save/load stub responses
+          // Save/load stubs for cross-origin game save APIs. These reply to
+          // ANY origin on purpose — games embedded from other origins need
+          // the stub to load at all — but target the reply at the requester's
+          // origin specifically rather than broadcasting it with "*".
           var saveactions = ["load", "load_content", "save_content", "save"];
           if (saveactions.indexOf(data.action) !== -1) {
             e.source.postMessage({
@@ -465,7 +470,7 @@
               message: "ok",
               content: "",
               slot:    data.slot
-            }, "*");
+            }, e.origin);
           }
         });
     </script>
@@ -842,28 +847,7 @@
     </script>
 
     <script>
-        async function getdeviceid() {
-          var stored = localStorage.getItem("dmDeviceId");
-          if (stored && /^[a-f0-9]{64}$/.test(stored)) return stored;
-
-          var hex;
-          if (crypto.getRandomValues) {
-            var bytes = new Uint8Array(32);
-            crypto.getRandomValues(bytes);
-            hex = Array.from(bytes).map(function(b) { return b.toString(16).padStart(2, "0"); }).join("");
-          } else {
-            var raw = [
-              navigator.userAgent, navigator.language, Date.now(), Math.random(),
-              screen.width, screen.height,
-              Intl.DateTimeFormat().resolvedOptions().timeZone
-            ].join("|");
-            var buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(raw));
-            hex = Array.from(new Uint8Array(buf)).map(function(b) { return b.toString(16).padStart(2, "0"); }).join("");
-          }
-
-          localStorage.setItem("dmDeviceId", hex);
-          return hex;
-        }
+        // getdeviceid lives in ./js/dm-shared.js (loaded in <head>)
 
         var reporttype = "";
 

@@ -1,38 +1,10 @@
-var autologin  = localStorage.getItem("dmAutoLogin") !== "false";
-var authtoken  = autologin
-  ? (localStorage.getItem("dmToken") || sessionStorage.getItem("dmToken") || "")
-  : (sessionStorage.getItem("dmToken") || "");
-var myusername = localStorage.getItem("dmUsername") || "";
+// page-specific DM UI for chat.html — shared auth/session/api helpers live in
+// dm-shared.js (loaded first): autologin/authtoken/myusername, savetoken,
+// cleartoken, getdeviceid, ini, esc, timeago, switchtab, submitauth.
 var activeconvo = null, polltimer = null, inboxtimer = null;
+var activedisplay = null;
 var inboxcache = [], lastmsgtime = 0, lastdatelabel = "";
 var POLL_MS = 2500;
-
-function savetoken(t) {
-  authtoken = t;
-  sessionStorage.setItem("dmToken", t);
-  if (autologin) localStorage.setItem("dmToken", t);
-  else localStorage.removeItem("dmToken");
-}
-
-function cleartoken() {
-  authtoken = "";
-  sessionStorage.removeItem("dmToken");
-  localStorage.removeItem("dmToken");
-}
-
-function ini(n) {
-  return String(n || "?").slice(0, 2).toUpperCase();
-}
-
-function getdeviceid() {
-  var stored = localStorage.getItem("dmDeviceId");
-  if (stored && /^[a-f0-9]{64}$/.test(stored)) return stored;
-  var bytes = new Uint8Array(32);
-  crypto.getRandomValues(bytes);
-  var hex = Array.from(bytes).map(function(b) { return b.toString(16).padStart(2, "0"); }).join("");
-  localStorage.setItem("dmDeviceId", hex);
-  return hex;
-}
 
 function showpw(){ document.getElementById("f-pass").type="text"; }
 function hidepw(){ document.getElementById("f-pass").type="password"; }
@@ -45,41 +17,6 @@ keepchk.addEventListener("change", function() {
   if (!autologin) localStorage.removeItem("dmToken");
   else if (authtoken) localStorage.setItem("dmToken", authtoken);
 });
-
-var currenttab = "login";
-function switchtab(t) {
-  currenttab = t;
-  document.getElementById("tab-login").classList.toggle("active", t === "login");
-  document.getElementById("tab-reg").classList.toggle("active", t === "register");
-  document.getElementById("auth-submit").textContent = t === "login" ? "Log in" : "Register";
-  document.getElementById("auth-err").textContent = "";
-}
-
-async function submitauth() {
-  var u = document.getElementById("f-user").value.trim();
-  var p = document.getElementById("f-pass").value;
-  var e = document.getElementById("auth-err");
-  e.textContent = "";
-  if (!u || !p) { e.textContent = "Fill in both fields."; return; }
-  var ep = currenttab === "login" ? "/api/accounts/login" : "/api/accounts/register";
-  try {
-    var deviceId = getdeviceid();
-    var body = { username: u, password: p, deviceId: deviceId };
-    var r = await fetch(ep, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-    var d = await r.json();
-    if (!d.ok) { e.textContent = d.error || "Something went wrong."; return; }
-    if (currenttab === "register") {
-      var lr = await fetch("/api/accounts/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ username: u, password: p, deviceId: deviceId }) });
-      var ld = await lr.json();
-      if (!ld.ok) { e.textContent = ld.error || "couldn't log you in after registering."; return; }
-      savetoken(ld.token); myusername = ld.username;
-    } else { savetoken(d.token); myusername = d.username; }
-    localStorage.setItem("dmUsername", myusername);
-    showapp();
-  } catch(_) { e.textContent = "Network error."; }
-}
-document.getElementById("f-user").addEventListener("keydown", function(e) { if (e.key === "Enter") document.getElementById("f-pass").focus(); });
-document.getElementById("f-pass").addEventListener("keydown", function(e) { if (e.key === "Enter") submitauth(); });
 
 function showapp() {
   document.getElementById("auth-page").style.display = "none";
@@ -98,6 +35,7 @@ function showauth() {
   clearInterval(inboxtimer);
   polltimer = inboxtimer = null;
   activeconvo = null;
+  activedisplay = null;
 }
 
 (async function() {
@@ -150,8 +88,16 @@ function openwipe() {
 }
 
 async function confirmwipe() {
-  var deviceid = getdeviceid();
-  try { await fetch("/api/accounts/delete-all-mine", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ deviceId: deviceid }) }); } catch(_) {}
+  var deviceid = await getdeviceid();
+  // requires the session token as well — the device fingerprint alone must
+  // not be enough to destroy an account
+  try {
+    await fetch("/api/accounts/delete-all-mine", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + authtoken },
+      body: JSON.stringify({ deviceId: deviceid })
+    });
+  } catch(_) {}
   ["dmToken","dmUsername","dmAutoLogin","dmDeviceId"].forEach(function(k) { localStorage.removeItem(k); sessionStorage.removeItem(k); });
   Object.keys(localStorage).filter(function(k) { return k.indexOf("dm") === 0; }).forEach(function(k) { localStorage.removeItem(k); });
   authtoken = "";
@@ -193,7 +139,7 @@ function renderinbox(cs) {
       + '<div class="tg-cb"><div class="tg-ct"><span class="tg-cn">' + esc(c.with) + '</span>'
       + '<span class="tg-ctime">' + timeago(c.lastTime) + '</span></div>'
       + '<div class="tg-cprev">' + esc(c.lastMessage) + '</div></div>' + badge;
-    it.addEventListener("click", function() { openconvo(c.with.toLowerCase()); });
+    it.addEventListener("click", function() { openconvo(c.with.toLowerCase(), c.with); });
     el.appendChild(it);
   });
   notifybadge(totalunread);
@@ -203,15 +149,16 @@ function notifybadge(count) {
   try { window.parent.postMessage({ type: "chat-unread", count: count }, location.origin); } catch(_) {}
 }
 
-function openconvo(u) {
+function openconvo(u, display) {
   activeconvo = u;
+  activedisplay = display || u;
   lastmsgtime = 0;
   lastdatelabel = "";
   document.getElementById("tg-empty").style.display = "none";
   var ac = document.getElementById("tg-active");
   ac.style.display = "flex";
-  document.getElementById("chat-name").textContent = u;
-  document.getElementById("chat-av").textContent = ini(u);
+  document.getElementById("chat-name").textContent = activedisplay;
+  document.getElementById("chat-av").textContent = ini(activedisplay);
   document.getElementById("tg-msgs").innerHTML = "";
   document.querySelectorAll(".tg-ci").forEach(function(el) {
     var name = el.querySelector(".tg-cn");
@@ -267,7 +214,20 @@ async function senddm() {
   var text = inp.value.trim();
   if (!text) return;
   inp.value = "";
-  await fetch("/api/dm/" + encodeURIComponent(activeconvo), { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + authtoken }, body: JSON.stringify({ message: text }) });
+  try {
+    var r = await fetch("/api/dm/" + encodeURIComponent(activeconvo), { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + authtoken }, body: JSON.stringify({ message: text }) });
+    if (!r.ok) {
+      // put the message back so it isn't silently lost
+      inp.value = text;
+      var d = await r.json().catch(function() { return {}; });
+      alert(d.error || "couldn't send that message.");
+      return;
+    }
+  } catch(_) {
+    inp.value = text;
+    alert("network error — message not sent.");
+    return;
+  }
   loadmsgs();
   loadinbox();
 }
@@ -291,7 +251,7 @@ function renderuserlist(users) {
     var el = document.createElement("div");
     el.className = "uitem";
     el.innerHTML = '<div class="uav">' + ini(u) + '</div>' + esc(u);
-    el.addEventListener("click", function() { closemodal("modal-newdm"); openconvo(u.toLowerCase()); loadinbox(); });
+    el.addEventListener("click", function() { closemodal("modal-newdm"); openconvo(u.toLowerCase(), u); loadinbox(); });
     box.appendChild(el);
   });
 }
@@ -315,13 +275,3 @@ document.getElementById("user-search").addEventListener("keydown", function(e) {
 function openmodal(id) { document.getElementById(id).style.display = "flex"; }
 function closemodal(id) { document.getElementById(id).style.display = "none"; }
 function bgclose(e, id) { if (e.target === e.currentTarget) closemodal(id); }
-
-function esc(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
-
-function timeago(ts) {
-  var d = Date.now() - ts;
-  if (d < 60000) return "now";
-  if (d < 3600000) return Math.floor(d / 60000) + "m";
-  if (d < 86400000) return Math.floor(d / 3600000) + "h";
-  return new Date(ts).toLocaleDateString([], { month: "short", day: "numeric" });
-}

@@ -178,10 +178,9 @@
           var games = window.games;
           if (games && games.length) {
             updatetagbuttons(collectalltags(games), activetags);
-            // source filter change triggers the unified filter in games.js;
-            // search input is already wired (debounced) by games.js — no duplicate listener needed
-            var sourceel = document.querySelector("#source-filter");
-            if (sourceel) { sourceel.removeEventListener("change", applytagfilter); sourceel.addEventListener("change", applytagfilter); }
+            // source-filter + search changes are wired by games.js
+            // (setsearchandfilter) — the old second listener here used to run
+            // the whole grid filter pass twice per change
             applytagfilter();
           } else {
             setTimeout(inittagsystem, 500);

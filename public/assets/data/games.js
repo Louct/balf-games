@@ -40,7 +40,10 @@ function normalizegame(rawgame, fallbacksource) {
   return game;
 }
 
-var GAMES_CACHE_TTL = 5 * 60 * 1000;
+// an hour: the catalog changes rarely, and the SWR cache headers on
+// /assets/data/* keep the files themselves fresh server-side. the old 5
+// minutes meant most return visits re-downloaded and re-parsed ~5.5MB.
+var GAMES_CACHE_TTL = 60 * 60 * 1000;
 var GAMES_IDB = "aetheris-games-cache";
 var GAMES_STORE = "cache";
 var GAMES_IDB_KEY = "games";
@@ -134,6 +137,23 @@ async function loadgamesdata() {
     var sourcecompare = (a.source || "").localeCompare(b.source || "");
     if (sourcecompare !== 0) return sourcecompare;
     return (a.title || "").localeCompare(b.title || "");
+  });
+
+  // sources are merged sorted by name, so aetheris ids come first and keep
+  // their raw form (the server's play-count allowlist matches them verbatim,
+  // and load links resolve to the earlier source — same as before this
+  // dedupe existed). a duplicate id arriving from a later source is re-keyed
+  // with its source prefix instead of silently shadowing the earlier game;
+  // rawid preserves the original so pre-dedupe favorites still match.
+  var seenids = {};
+  merged.forEach(function(g) {
+    var key = String(g.id);
+    if (seenids[key]) {
+      g.rawid = key;
+      g.id = g.source + ":" + key;
+    } else {
+      seenids[key] = true;
+    }
   });
 
   window.games = merged;

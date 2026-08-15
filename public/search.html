@@ -181,10 +181,10 @@
 
         async function waitforaetherisproxy() {
           if (window.aetherisProxy) return;
-          // scramjet-init.js is a deferred script, so it hasn't necessarily run
-          // yet if this fires from an inline <script> (e.g. the ?q= auto-search
-          // below) that executes synchronously while the document is still
-          // being parsed — defer scripts only run after parsing finishes.
+          // scramjet-init.js is a plain (non-deferred) script, but if this
+          // fires from the inline ?q= auto-search below it can still beat the
+          // browser finishing those loads — poll for the helper instead of
+          // assuming it's there.
           await new Promise(function(resolve, reject) {
             var waited = 0;
             var t = setInterval(function() {

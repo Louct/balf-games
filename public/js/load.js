@@ -146,10 +146,16 @@
     var storagekey = appid ? "favoritedApps" : "favoritedGames";
     var itemid = item.id;
 
-    function refreshstar() {
-      var saved = JSON.parse(localStorage.getItem(storagekey) || "[]");
-      starbtn.textContent = saved.indexOf(itemid) !== -1 ? "★" : "☆";
-    }
+  function refreshstar() {
+    var saved = JSON.parse(localStorage.getItem(storagekey) || "[]");
+    starbtn.textContent = isfavorited(saved, item) ? "★" : "☆";
+  }
+
+  function isfavorited(saved, it) {
+    if (saved.indexOf(it.id) !== -1) return true;
+    // favorites saved before id deduping may hold the raw shared id
+    return !!it.rawid && saved.indexOf(it.rawid) !== -1;
+  }
 
     starbtn.onclick = function() {
       var favs = JSON.parse(localStorage.getItem(storagekey) || "[]");

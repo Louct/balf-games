@@ -4,10 +4,21 @@
 	}
 }
 
+# on_demand_tls "ask" endpoint. MUST stay restrictive: returning 200 here
+# tells Caddy (and therefore Let's Encrypt) that we're willing to mint a
+# certificate for the requested domain. An unconditional 200 would let
+# anyone who points DNS at this server get certs minted and the whole site
+# (proxy included) served on their hostname. Only allow our own domains.
 http://127.0.0.1:9999 {
-	respond 200
+	@allowed expression {http.request.uri.query.domain} =~ '(?i)^([a-z0-9-]+\.)*(aetheris\.win|crax\.lol)$'
+	respond @allowed 200
+	respond 404
 }
 
+# tls_insecure_skip_verify is deliberate: some of these game CDNs serve
+# certificates that don't match the SNI we connect with. It means the
+# server→upstream leg isn't authenticated — acceptable for game/movie
+# traffic, but don't copy this pattern for anything sensitive.
 (region_proxy) {
 	handle_path {args[0]}/* {
 		reverse_proxy {args[1]}:443 {
@@ -89,6 +100,11 @@ https:// {
 	tls {
 		on_demand
 	}
+
+	# compress text on the wire. the games catalog alone is ~5.5MB of JSON
+	# (~1.1MB gzipped) and the proxy/game JS bundles shrink just as much —
+	# without this every cold visit pays the full uncompressed weight.
+	encode zstd gzip
 
 	# CORS Preflight
 	@cors_preflight method OPTIONS

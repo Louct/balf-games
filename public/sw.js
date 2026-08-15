@@ -32,6 +32,28 @@ async function migrateifneeded() {
 var scramjetloaded = false;
 var spoofdesktopua = false;
 
+// derive every same-origin check from the SW's own origin so self-hosters on
+// other domains get the same bypass/rewrite behavior as aetheris.win
+var SITE_ORIGIN = self.location.origin;
+var SITE_HOST = self.location.hostname;
+
+// spoofdesktopua lives in SW memory, which the browser can recycle at any
+// time — persist it in the __sw_meta__ cache so a restarted SW restores the
+// user's setting instead of silently dropping it.
+(function restorespoofstate() {
+  caches.open("__sw_meta__")
+    .then(function(c) { return c.match("/spoof-desktop-ua"); })
+    .then(function(r) { return r ? r.text() : null; })
+    .then(function(v) { if (v !== null) spoofdesktopua = v === "1"; })
+    .catch(function() {});
+})();
+
+function persistspoofstate(enabled) {
+  caches.open("__sw_meta__")
+    .then(function(c) { return c.put("/spoof-desktop-ua", new Response(enabled ? "1" : "0")); })
+    .catch(function() {});
+}
+
 var desktopua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
 var desktopuashim = '<script>' +
@@ -344,6 +366,28 @@ var audiounlockshim = '<script>' +
 // executes synchronously before any game scripts; absolute path bypasses <base href>)
 var adspoofshim = '<script src="/js/ad-spoof.js"><\/script>';
 
+// Panic key — reads the same origin localStorage the settings page writes
+// (proxied pages are same-origin under /~/sj/, so this works inside games
+// too). One keypress navigates the whole tab away to the "safe" URL.
+var panicshim = '<script>' +
+'(function(){' +
+'  if (window.__aetherisPanicInstalled) return;' +
+'  window.__aetherisPanicInstalled = true;' +
+'  function panic(e) {' +
+'    try {' +
+'      var k = localStorage.getItem("panickey");' +
+'      if (!k || e.key !== k) return;' +
+'      var t = e.target;' +
+'      if (e.key.length === 1 && t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;' +
+'      var u = localStorage.getItem("panicurl") || "https://classroom.google.com/";' +
+'      var w = window.top || window;' +
+'      try { w.location.replace(u); } catch (_) { window.location.replace(u); }' +
+'    } catch (_) {}' +
+'  }' +
+'  document.addEventListener("keydown", panic, true);' +
+'})();' +
+'<\/script>';
+
 // scramjet v2 doesn't patch navigator.cookieEnabled — proxied pages see the
 // real browser's value unmodified. Some sites (e.g. Bloxity/legionsdk.com)
 // gate signin on `navigator.cookieEnabled === false` and show "your browser
@@ -370,7 +414,7 @@ async function injecthtmlshims(response, options) {
     var ct = (response.headers.get("content-type") || "").toLowerCase();
     if (ct.indexOf("text/html") === -1) return response;
     var text = await response.text();
-    var shims = cookieenabledshim + (options.desktopua ? desktopuashim : "") + audiounlockshim + adspoofshim;
+    var shims = cookieenabledshim + panicshim + (options.desktopua ? desktopuashim : "") + audiounlockshim + adspoofshim;
     var injected = (/<head[^>]*>/i.test(text))
       ? text.replace(/<head[^>]*>/i, function(m) { return m + shims; })
       : shims + text;
@@ -421,6 +465,9 @@ var fetcherrors = new Map();
 function logfetchfail(req, err) {
   var now = Date.now();
   if (now - (fetcherrors.get(req.url) || 0) < 5000) return;
+  // cap: one entry per failing url, cleared wholesale once it grows — the SW
+  // is recycled eventually, but don't let a pathological page grow it forever
+  if (fetcherrors.size > 500) fetcherrors.clear();
   fetcherrors.set(req.url, now);
   console.error("[SW] fetch failed:", (err && err.message) || err, "\n url:", req.url);
 }
@@ -462,17 +509,17 @@ function shouldbypass(url) {
     url.indexOf("/api-proxy/") !== -1 ||
     url.indexOf("/proxy/") !== -1 ||
     url.indexOf("jsdelivr.net") !== -1 ||
-    url.indexOf("aetheris.win/assets/") !== -1 ||
-    url.indexOf("aetheris.win/scramjet/") !== -1 ||
-    url.indexOf("aetheris.win/controller/") !== -1 ||
-    url.indexOf("aetheris.win/api/") !== -1 ||
-    url.indexOf("aetheris.win/js/") !== -1 ||
-    url.indexOf("aetheris.win/css/") !== -1
+    url.indexOf(SITE_ORIGIN + "/assets/") !== -1 ||
+    url.indexOf(SITE_ORIGIN + "/scramjet/") !== -1 ||
+    url.indexOf(SITE_ORIGIN + "/controller/") !== -1 ||
+    url.indexOf(SITE_ORIGIN + "/api/") !== -1 ||
+    url.indexOf(SITE_ORIGIN + "/js/") !== -1 ||
+    url.indexOf(SITE_ORIGIN + "/css/") !== -1
   ) return true;
 
   try {
     var parsed = new URL(url);
-    if (parsed.hostname === "aetheris.win" && /\.html$/.test(parsed.pathname)) return true;
+    if (parsed.hostname === SITE_HOST && /\.html$/.test(parsed.pathname)) return true;
   } catch (e) {};
 
   try { if (/\/online(-count)?$/.test(new URL(url).pathname)) return true; }
@@ -494,7 +541,7 @@ self.addEventListener("fetch", function(event) {
   }
 
   if (!proxied && url.indexOf("api.1games.io") !== -1) {
-    var rewritten = url.replace("https://api.1games.io/", "https://aetheris.win/api-proxy/");
+    var rewritten = url.replace("https://api.1games.io/", SITE_ORIGIN + "/api-proxy/");
     event.respondWith(
       event.request.text().then(function(body) {
         return fetch(rewritten, {
@@ -582,5 +629,6 @@ self.addEventListener("message", function(event) {
   if (event.data && event.data.type === "SKIP_WAITING") self.skipWaiting();
   if (event.data && event.data.type === "aetheris-set-desktop-ua-spoof") {
     spoofdesktopua = event.data.enabled === true;
+    persistspoofstate(spoofdesktopua);
   }
 });

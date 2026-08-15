@@ -141,7 +141,9 @@
 
             <h2>Panic Key</h2>
             <h4>
-                dont pick a key u use alot.
+                pick a key games don't use for controls (like ` or ;) — a key
+                like WASD or space will bail out mid-game. single keys won't
+                trigger while you're typing in a text box.
             </h4>
             <div class="form-row">
                 <input type="text" id="panickey" placeholder="Panic key" />
@@ -239,6 +241,10 @@
 
     <script>
         function resetcache(btn) {
+            // unregistering the service worker + wiping caches/idb breaks the
+            // proxy for any game running in another tab right now — make sure
+            // that's understood before pulling the trigger
+            if (!confirm("this resets the service worker, caches and saved proxy data. any game currently running through the proxy will break until it's reloaded. continue?")) return;
             btn.disabled = true;
             btn.textContent = 'Clearing...';
             var status = document.getElementById('data-status');

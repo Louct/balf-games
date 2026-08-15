@@ -49,6 +49,9 @@ async function verifypw(pw, stored) {
 	if (!stored?.startsWith("scrypt:")) return false;
 	const [, salt, hash] = stored.split(":");
 	const expected = Buffer.from(hash, "hex");
+	// a malformed/truncated stored hash must fail closed, not throw (scrypt
+	// rejects keylen 0 and would turn every login into a 500)
+	if (!salt || expected.length === 0) return false;
 	const actual = await scryptAsync(pw, salt, expected.length, SCRYPT_OPTS);
 	return timingSafeEqual(expected, actual);
 }
@@ -57,9 +60,12 @@ async function verifypw(pw, stored) {
 
 // --- helpers ---
 
+// req.ip is computed by proxy-addr from X-Forwarded-For, walking right-to-left
+// past trusted proxies (trustProxy is pinned to the local Caddy below). NEVER
+// parse X-Forwarded-For manually: the leftmost entries are client-supplied and
+// spoofable, which used to defeat every IP-based rate limit on this server.
 function getclientip(req) {
-	const forwarded = req.headers["x-forwarded-for"];
-	return forwarded ? forwarded.split(",")[0].trim() : req.ip;
+	return req.ip;
 }
 
 function isvaliddeviceid(id) {
@@ -114,14 +120,6 @@ function deleteuser(user) {
 	usernames.delete(lc);
 	if (user.deviceId) deviceindex.delete(user.deviceId);
 
-	if (user.ip) {
-		const ips = ipindex.get(user.ip);
-		if (ips) {
-			ips.delete(lc);
-			if (!ips.size) ipindex.delete(user.ip);
-		}
-	}
-
 	try { unlinkSync(userpath(user.username)); } catch { /* already gone */ }
 }
 
@@ -139,16 +137,71 @@ function allusers() {
 	}
 }
 
+const SESSION_TTL = 30 * 24 * 60 * 60 * 1000; // 30 days
+const MAX_SESSIONS = 10;
+
 function finduser(token) {
 	const username = tokenindex.get(token);
 	if (!username) return null;
 
 	const user = readuser(username);
-	if (user?.sessions?.[token]) return user;
+	if (!user?.sessions?.[token]) {
+		tokenindex.delete(token);
+		return null;
+	}
 
-	// stale token — user file was deleted or session was removed outside our process
-	tokenindex.delete(token);
-	return null;
+	// expired session: treat as invalid. we deliberately don't write the file
+	// here — finduser runs on every request outside the per-user locks; the
+	// dead session gets pruned from disk at the user's next login instead.
+	if (typeof user.sessions[token]?.createdAt === "number" &&
+	    Date.now() - user.sessions[token].createdAt > SESSION_TTL) {
+		forgettoken(token);
+		return null;
+	}
+
+	return user;
+}
+
+// keep the newest MAX_SESSIONS unexpired sessions
+function prunesessions(user, keeptoken) {
+	if (!user?.sessions) return;
+	const now = Date.now();
+	const all = Object.entries(user.sessions);
+	const entries = all
+		.filter(([t, s]) => t === keeptoken || (typeof s?.createdAt === "number" && now - s.createdAt <= SESSION_TTL))
+		.sort((a, b) => (b[1]?.createdAt || 0) - (a[1]?.createdAt || 0))
+		.slice(0, MAX_SESSIONS);
+	const kept = new Set(entries.map(([t]) => t));
+	if (kept.size === all.length) return; // nothing dropped
+	user.sessions = Object.fromEntries(entries);
+	for (const [t] of all) {
+		if (!kept.has(t)) forgettoken(t);
+	}
+}
+
+
+
+// --- per-user write serialization ---
+// user files are read-modify-write JSON documents; two concurrent requests for
+// the same user (two DMs, a DM + a login) would silently drop whichever write
+// lands first. every mutating endpoint runs its read→write inside one of these
+// per-user promise chains. two-user operations lock in sorted order so
+// concurrent A→B and B→A requests can't deadlock.
+
+const userlocks = new Map();
+
+function withuserlock(lc, fn) {
+	const prev = userlocks.get(lc) || Promise.resolve();
+	const run = prev.then(() => fn());
+	const tail = run.catch(() => {});
+	tail.then(() => { if (userlocks.get(lc) === tail) userlocks.delete(lc); });
+	userlocks.set(lc, tail);
+	return run;
+}
+
+function withuserlocks(a, b, fn) {
+	const [first, second] = a < b ? [a, b] : [b, a];
+	return withuserlock(first, () => withuserlock(second, fn));
 }
 
 
@@ -160,18 +213,12 @@ function finduser(token) {
 const tokenindex = new Map();   // token -> username (lowercase)
 const usernames = new Map();    // lowercase name -> original case
 const deviceindex = new Map();  // device fingerprint -> username (lowercase)
-const ipindex = new Map();      // ip -> Set<username (lowercase)>
 
 function indexuser(u) {
 	if (!u?.username) return;
 	const lc = u.username.toLowerCase();
 	usernames.set(lc, u.username);
 	if (u.deviceId) deviceindex.set(u.deviceId, lc);
-	if (u.ip) {
-		let set = ipindex.get(u.ip);
-		if (!set) { set = new Set(); ipindex.set(u.ip, set); }
-		set.add(lc);
-	}
 }
 
 function remembertoken(token, username) {
@@ -186,7 +233,6 @@ function rebuildindices() {
 	tokenindex.clear();
 	usernames.clear();
 	deviceindex.clear();
-	ipindex.clear();
 	for (const u of allusers()) {
 		indexuser(u);
 		if (!u.sessions) continue;
@@ -194,7 +240,7 @@ function rebuildindices() {
 			tokenindex.set(token, u.username.toLowerCase());
 		}
 	}
-	console.log(`indices loaded: ${usernames.size} users, ${tokenindex.size} sessions, ${deviceindex.size} devices, ${ipindex.size} ips`);
+	console.log(`indices loaded: ${usernames.size} users, ${tokenindex.size} sessions, ${deviceindex.size} devices`);
 }
 rebuildindices();
 
@@ -355,6 +401,10 @@ function handleupgrade(req, socket, head) {
 	socket.end();
 }
 
+// Fallback ws proxy for growden.io only. Caddy's @wsproxy block handles the
+// primary /wsproxy/ traffic, but its regex requires a "/" after the host, so
+// bare /wsproxy/<host> (no trailing path) falls through to us. Keep in sync
+// with the Caddyfile or remove both if growden's direct ws ever goes away.
 function proxywsconnection(req, socket, head) {
 	const path = req.url.slice("/wsproxy/".length);
 	const slash = path.indexOf("/");
@@ -397,7 +447,10 @@ function proxywsconnection(req, socket, head) {
 }
 
 const fastify = Fastify({
-	trustProxy: true,
+	// only the local Caddy is a proxy. with `true` here, proxy-addr trusts every
+	// X-Forwarded-For entry and req.ip becomes the client-supplied leftmost
+	// value — i.e. anyone could spoof their IP past the rate limiters.
+	trustProxy: ["127.0.0.1", "::1"],
 	serverFactory: (handler) =>
 		createServer()
 			.on("request", (req, res) => {
@@ -632,18 +685,60 @@ function requireauth(req, reply) {
 	return user;
 }
 
-function cleanupdms(user) {
-	const senderlower = user.username.toLowerCase();
-	for (const otherlower of Object.keys(user.dms || {})) {
-		const other = readuser(otherlower);
-		if (other?.dms) {
-			delete other.dms[senderlower];
-			writeuser(other);
-		}
+// full account removal. dm cleanup happens FIRST, each other user under their
+// own lock — locks are never nested here, which keeps the sorted-order
+// deadlock prevention in withuserlocks() sound (a concurrent A→B DM holds
+// locks in sorted order; we only ever take one at a time).
+async function deleteaccount(lc) {
+	const victim = readuser(lc);
+	if (!victim) return false;
+
+	for (const otherlower of Object.keys(victim.dms || {})) {
+		await withuserlock(otherlower, () => {
+			const other = readuser(otherlower);
+			if (other?.dms) {
+				delete other.dms[lc];
+				writeuser(other);
+			}
+		});
 	}
+
+	await withuserlock(lc, () => {
+		const fresh = readuser(lc);
+		if (!fresh) return;
+		for (const t of Object.keys(fresh.sessions || {})) forgettoken(t);
+		deleteuser(fresh);
+	});
+	return true;
 }
 
 
+
+// --- account creation rate limiting ---
+// register writes a file per account; without a limiter a trivial script
+// could mint unlimited users (and json files) with random device ids.
+const REGISTER_WINDOW = 60 * 1000;
+const MAX_REGISTER_PER_FP = 3;
+const registerattempts = new Map();
+
+function registerallowed(req) {
+	const { deviceId: deviceid } = req.body || {};
+	const fp = isvaliddeviceid(deviceid) ? `dev:${deviceid}` : `ip:${getclientip(req)}`;
+	const now = Date.now();
+	const entry = registerattempts.get(fp) || { count: 0, windowstart: now };
+	if (now - entry.windowstart > REGISTER_WINDOW) {
+		entry.count = 0;
+		entry.windowstart = now;
+	}
+	entry.count++;
+	registerattempts.set(fp, entry);
+	if (registerattempts.size > 10_000) {
+		for (const [k, v] of registerattempts) {
+			if (v.windowstart < now - REGISTER_WINDOW) registerattempts.delete(k);
+		}
+	}
+	return entry.count <= MAX_REGISTER_PER_FP;
+}
 
 fastify.post("/api/accounts/register", async (req, reply) => {
 	const ip = getclientip(req);
@@ -652,8 +747,12 @@ fastify.post("/api/accounts/register", async (req, reply) => {
 	if (!username || !password) return reply.code(400).send({ ok: false, error: "Missing username or password." });
 	if (username.length < 2 || username.length > 32) return reply.code(400).send({ ok: false, error: "Username must be 2–32 characters." });
 	if (password.length < 4 || password.length > 128) return reply.code(400).send({ ok: false, error: "Password must be 4–128 characters." });
-	if (!/^[a-zA-Z0-9_\-\.]+$/.test(username)) return reply.code(400).send({ ok: false, error: "Username may only contain letters, numbers, _, -, ." });
+	if (!/^[a-zA-Z0-9_.-]+$/.test(username)) return reply.code(400).send({ ok: false, error: "Username may only contain letters, numbers, _, -, ." });
 	if (!isvaliddeviceid(deviceid)) return reply.code(400).send({ ok: false, error: "Missing or invalid device fingerprint. Please enable cookies/localStorage." });
+	if (!registerallowed(req)) {
+		const wait = Math.ceil(REGISTER_WINDOW / 1000);
+		return reply.code(429).send({ ok: false, error: `Too many accounts created from this device/network. Try again in ${wait}s.` });
+	}
 
 	const loweruser = username.toLowerCase();
 
@@ -665,10 +764,22 @@ fastify.post("/api/accounts/register", async (req, reply) => {
 		deviceindex.delete(deviceid);
 	}
 
-	if (usernames.has(loweruser) || readuser(loweruser)) return reply.code(409).send({ ok: false, error: "Username already taken." });
+	// create + first session inside the lock so a racing duplicate register
+	// or login can't interleave with the write
+	const result = await withuserlock(loweruser, async () => {
+		if (usernames.has(loweruser) || readuser(loweruser)) return { conflict: true };
 
-	writeuser({ username, passwordHash: await hashpw(password), ip, deviceId: deviceid, createdAt: Date.now(), sessions: {}, dms: {} });
-	reply.send({ ok: true, username });
+		const user = { username, passwordHash: await hashpw(password), ip, deviceId: deviceid, createdAt: Date.now(), sessions: {}, dms: {} };
+		const token = maketoken();
+		user.sessions[token] = { ip, createdAt: Date.now() };
+		writeuser(user);
+		remembertoken(token, user.username);
+		return { token };
+	});
+
+	if (result.conflict) return reply.code(409).send({ ok: false, error: "Username already taken." });
+	// hand back a session right away — no second login round trip
+	reply.send({ ok: true, token: result.token, username });
 });
 
 
@@ -715,64 +826,75 @@ fastify.post("/api/accounts/login", async (req, reply) => {
 		return reply.code(429).send({ ok: false, error: `Too many login attempts. Try again in ${retryafter}s.` });
 	}
 
-	const user = readuser(username.toLowerCase());
-	if (!user || !await verifypw(password, user.passwordHash)) {
+	const user = await withuserlock(userlc, async () => {
+		const u = readuser(userlc);
+		if (!u || !await verifypw(password, u.passwordHash)) return null;
+
+		const token = maketoken();
+		u.sessions ??= {};
+		u.sessions[token] = { ip, createdAt: Date.now() };
+		u.ip = ip;
+		prunesessions(u, token);
+		writeuser(u);
+		remembertoken(token, u.username);
+		return { user: u, token };
+	});
+
+	if (!user) {
 		return reply.code(401).send({ ok: false, error: "Invalid username or password." });
 	}
 
-	const token = maketoken();
-	user.sessions ??= {};
-	user.sessions[token] = { ip, createdAt: Date.now() };
-	user.ip = ip;
-	writeuser(user);
-	remembertoken(token, user.username);
-
-	reply.send({ ok: true, token, username: user.username });
+	reply.send({ ok: true, token: user.token, username: user.user.username });
 });
 
 
-fastify.post("/api/accounts/logout", (req, reply) => {
+fastify.post("/api/accounts/logout", async (req, reply) => {
 	const token = gettoken(req);
 	if (!token) return reply.code(400).send({ ok: false, error: "No token." });
 
-	const user = finduser(token);
-	if (user) {
-		delete user.sessions[token];
-		writeuser(user);
+	const lc = tokenindex.get(token);
+	if (lc) {
+		await withuserlock(lc, () => {
+			const user = readuser(lc);
+			if (user?.sessions) {
+				delete user.sessions[token];
+				writeuser(user);
+			}
+		});
 	}
 	forgettoken(token);
 	reply.send({ ok: true });
 });
 
 
-fastify.delete("/api/accounts/delete", (req, reply) => {
+fastify.delete("/api/accounts/delete", async (req, reply) => {
 	const token = gettoken(req);
 	if (!token) return reply.code(400).send({ ok: false, error: "No token." });
 
-	const user = finduser(token);
-	if (!user) return reply.code(401).send({ ok: false, error: "Invalid or expired session." });
+	const lc = tokenindex.get(token);
+	if (!lc || !readuser(lc)?.sessions?.[token]) {
+		forgettoken(token);
+		return reply.code(401).send({ ok: false, error: "Invalid or expired session." });
+	}
 
-	cleanupdms(user);
-	for (const t of Object.keys(user.sessions || {})) forgettoken(t);
-	deleteuser(user);
+	await deleteaccount(lc);
 	reply.send({ ok: true });
 });
 
 
-fastify.delete("/api/accounts/delete-all-mine", (req, reply) => {
+fastify.delete("/api/accounts/delete-all-mine", async (req, reply) => {
+	// the device fingerprint alone must NOT be enough to destroy an account —
+	// it's readable from any shared browser and rides along in the settings
+	// export file. require a valid session AND that it belongs to the same
+	// device being wiped.
+	const me = requireauth(req, reply);
+	if (!me) return;
+
 	const { deviceId: deviceid } = req.body || {};
 	if (!isvaliddeviceid(deviceid)) return reply.code(400).send({ ok: false, error: "Missing device fingerprint." });
+	if (me.deviceId !== deviceid) return reply.code(403).send({ ok: false, error: "This account was not created on that device." });
 
-	const lc = deviceindex.get(deviceid);
-	if (!lc) return reply.send({ ok: true, deleted: 0 });
-
-	const user = readuser(lc);
-	if (!user) { deviceindex.delete(deviceid); return reply.send({ ok: true, deleted: 0 }); }
-
-	cleanupdms(user);
-	for (const t of Object.keys(user.sessions || {})) forgettoken(t);
-	deleteuser(user);
-
+	await deleteaccount(me.username.toLowerCase());
 	reply.send({ ok: true, deleted: 1 });
 });
 
@@ -834,29 +956,36 @@ fastify.post("/api/dm/:recipient", async (req, reply) => {
 	if (!message?.trim()) return reply.code(400).send({ ok: false, error: "Empty message." });
 	if (message.length > 3000) return reply.code(400).send({ ok: false, error: "Message too long (max 3000 characters)." });
 
-	const recipient = readuser(recipientlower);
-	if (!recipient) return reply.code(404).send({ ok: false, error: "User not found." });
+	if (!usernames.has(recipientlower)) return reply.code(404).send({ ok: false, error: "User not found." });
 
 	const senderlower = me.username.toLowerCase();
 	if (senderlower === recipientlower) return reply.code(400).send({ ok: false, error: "Cannot DM yourself." });
 
 	const msg = { from: senderlower, message: message.trim(), time: Date.now() };
 
-	me.dms                ??= {};
-	me.dms[recipientlower] ??= [];
-	me.dms[recipientlower].push(msg);
-	if (me.dms[recipientlower].length > DM_MAX) {
-		me.dms[recipientlower] = me.dms[recipientlower].slice(-DM_MAX);
-	}
-	writeuser(me);
+	// both files are read AND written inside the same sorted two-user lock, so
+	// concurrent messages in either direction can't drop each other's writes
+	await withuserlocks(senderlower, recipientlower, () => {
+		const sender = readuser(senderlower);
+		const recipient = readuser(recipientlower);
+		if (!recipient) throw new Error("recipient gone");
 
-	recipient.dms             ??= {};
-	recipient.dms[senderlower] ??= [];
-	recipient.dms[senderlower].push(msg);
-	if (recipient.dms[senderlower].length > DM_MAX) {
-		recipient.dms[senderlower] = recipient.dms[senderlower].slice(-DM_MAX);
-	}
-	writeuser(recipient);
+		sender.dms                 ??= {};
+		sender.dms[recipientlower] ??= [];
+		sender.dms[recipientlower].push(msg);
+		if (sender.dms[recipientlower].length > DM_MAX) {
+			sender.dms[recipientlower] = sender.dms[recipientlower].slice(-DM_MAX);
+		}
+		writeuser(sender);
+
+		recipient.dms             ??= {};
+		recipient.dms[senderlower] ??= [];
+		recipient.dms[senderlower].push(msg);
+		if (recipient.dms[senderlower].length > DM_MAX) {
+			recipient.dms[senderlower] = recipient.dms[senderlower].slice(-DM_MAX);
+		}
+		writeuser(recipient);
+	});
 
 	reply.send({ ok: true });
 });
@@ -887,13 +1016,18 @@ fastify.get("/api/dm-inbox", (req, reply) => {
 });
 
 
-fastify.post("/api/dm-inbox/read/:other", (req, reply) => {
+fastify.post("/api/dm-inbox/read/:other", async (req, reply) => {
 	const me = requireauth(req, reply);
 	if (!me) return;
 
-	me.lastRead                                 ??= {};
-	me.lastRead[req.params.other.toLowerCase()] = Date.now();
-	writeuser(me);
+	const lc = me.username.toLowerCase();
+	await withuserlock(lc, () => {
+		const fresh = readuser(lc);
+		if (!fresh) return;
+		fresh.lastRead                            ??= {};
+		fresh.lastRead[req.params.other.toLowerCase()] = Date.now();
+		writeuser(fresh);
+	});
 	reply.send({ ok: true });
 });
 
@@ -907,6 +1041,20 @@ fastify.addHook("onSend", (req, reply, payload, done) => {
 
 	if (path === "/sw.js" || path === "/register-sw.js") {
 		reply.header("Cache-Control", "no-store");
+	} else if (path.startsWith("/assets/games/")) {
+		// game bundles are huge (Unity wasm builds run 30MB+) and their
+		// filenames are content-hashed; they only change when a game is
+		// updated. a day of freshness + background revalidation turns repeat
+		// game loads into instant ones (these used to be max-age=0).
+		if (/\.html?$/i.test(path)) {
+			reply.header("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400");
+		} else {
+			reply.header("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
+		}
+	} else if (/^\/(scramjet|controller|libcurl|epoxy)\//.test(path)) {
+		// proxy engine bundles — version-pinned in package.json, only change
+		// on deploy. same policy as /css/ + /js/: short freshness, long SWR.
+		reply.header("Cache-Control", "public, max-age=600, stale-while-revalidate=604800");
 	} else if (String(reply.getHeader("content-type") || "").includes("text/html")) {
 		reply.header("Cache-Control", "no-cache");
 	} else if (path.startsWith("/css/") || path.startsWith("/js/")) {
