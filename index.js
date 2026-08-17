@@ -1,5 +1,5 @@
 import { createServer } from "node:http";
-import { readFileSync, writeFileSync, existsSync, readdirSync, mkdirSync, unlinkSync, renameSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, readdirSync, readlinkSync, mkdirSync, unlinkSync, renameSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { randomBytes, scrypt, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
@@ -1238,10 +1238,114 @@ async function shutdown() {
 process.on("SIGINT",  shutdown);
 process.on("SIGTERM", shutdown);
 
-const port = parseInt(process.env.PORT || "") || 8080;
-try {
-	await fastify.listen({ port, host: "::" });
-} catch (err) {
-	console.error("STARTUP FAILED:", err);
-	process.exit(1);
+// --- port ownership detection + duplicate-instance recovery ---
+// The classic failure here: a stale `node index.js` started outside pm2 grabs
+// port 8080, pm2's copy hits EADDRINUSE, and this catch used to exit(1) — which
+// pm2 turns into a blind crash-loop that's opaque until you manually hunt the
+// squatter. Instead, identify who owns the port, and if it's a duplicate of
+// this exact app (same cwd, running index.js), terminate it and take the port.
+// A foreign owner is never killed — diagnose, then fail loudly.
+
+function findPortOwnerPid(port) {
+	try {
+		const hexport = port.toString(16).padStart(4, "0");
+		let inode = null;
+		for (const file of ["/proc/net/tcp", "/proc/net/tcp6"]) {
+			let txt;
+			try { txt = readFileSync(file, "utf8"); } catch { continue; }
+			for (const line of txt.split("\n")) {
+				const parts = line.trim().split(/\s+/);
+				if (parts.length < 10) continue;
+				// fields: sl local_address rem_address st ... inode
+				const [local, st, , , , , , , , socketinode] = parts;
+				if (st === "0A" /* LISTEN */ && local.endsWith(":" + hexport)) {
+					inode = socketinode;
+					break;
+				}
+			}
+			if (inode) break;
+		}
+		if (!inode) return null;
+		const needle = `socket:[${inode}]`;
+		for (const pid of readdirSync("/proc")) {
+			if (!/^\d+$/.test(pid)) continue;
+			try {
+				for (const fd of readdirSync(`/proc/${pid}/fd`)) {
+					try {
+						if (readlinkSync(`/proc/${pid}/fd/${fd}`) === needle) return parseInt(pid, 10);
+					} catch { /* fd vanished mid-scan */ }
+				}
+			} catch { /* process exited mid-scan */ }
+		}
+	} catch { /* /proc unavailable — caller handles null */ }
+	return null;
 }
+
+function isDuplicateOfOurs(pid) {
+	try {
+		const cmdline = readFileSync(`/proc/${pid}/cmdline`, "utf8").split("\0").join(" ").trim();
+		const cwd = readlinkSync(`/proc/${pid}/cwd`);
+		return cmdline.includes("index.js") && cwd === process.cwd();
+	} catch {
+		return false;
+	}
+}
+
+function describeProcess(pid) {
+	try {
+		const cmdline = readFileSync(`/proc/${pid}/cmdline`, "utf8").split("\0").join(" ").trim();
+		const cwd = readlinkSync(`/proc/${pid}/cwd`);
+		return `PID ${pid} (${cmdline || "unknown cmdline"} — cwd ${cwd})`;
+	} catch {
+		return `PID ${pid} (gone)`;
+	}
+}
+
+async function waitForPidExit(pid, timeoutMs) {
+	const deadline = Date.now() + timeoutMs;
+	while (Date.now() < deadline) {
+		try { process.kill(pid, 0); } catch { return true; } // ESRCH — gone
+		await new Promise(r => setTimeout(r, 100));
+	}
+	return false;
+}
+
+const port = parseInt(process.env.PORT || "") || 8080;
+const MAX_LISTEN_ATTEMPTS = 3;
+
+async function start() {
+	for (let attempt = 1; attempt <= MAX_LISTEN_ATTEMPTS; attempt++) {
+		try {
+			await fastify.listen({ port, host: "::" });
+			return;
+		} catch (err) {
+			if (err?.code !== "EADDRINUSE") {
+				console.error("STARTUP FAILED:", err);
+				process.exit(1);
+			}
+
+			const owner = findPortOwnerPid(port);
+			if (owner && isDuplicateOfOurs(owner)) {
+				console.error(`[port] :::${port} held by a stale duplicate instance — ${describeProcess(owner)}. Terminating it and retrying.`);
+				try { process.kill(owner, "SIGTERM"); } catch { /* already gone */ }
+				const exited = await waitForPidExit(owner, 4000);
+				if (!exited) {
+					console.error(`[port] duplicate ignored SIGTERM — sending SIGKILL`);
+					try { process.kill(owner, "SIGKILL"); } catch { /* already gone */ }
+					await waitForPidExit(owner, 2000);
+				}
+				continue; // retry the bind
+			}
+
+			console.error(`STARTUP FAILED: :::${port} is in use by ${owner ? describeProcess(owner) : "an unknown process (could not read /proc)"} — not a duplicate of this app, will not kill it.`);
+			if (attempt < MAX_LISTEN_ATTEMPTS) {
+				console.error(`[port] retrying (attempt ${attempt}/${MAX_LISTEN_ATTEMPTS})…`);
+				await new Promise(r => setTimeout(r, 1500));
+				continue;
+			}
+			process.exit(1);
+		}
+	}
+}
+
+await start();
