@@ -10,7 +10,7 @@
 # anyone who points DNS at this server get certs minted and the whole site
 # (proxy included) served on their hostname. Only allow our own domains.
 http://127.0.0.1:9999 {
-	@allowed expression {http.request.uri.query.domain}.matches('(?i)^([a-z0-9-]+\.)*(aetheris\.win|crax\.lol)$')
+	@allowed expression {http.request.uri.query.domain}.matches("(?i)^([a-z0-9-]+\\.)*(aetheris\\.win|crax\\.lol)$")
 	respond @allowed 200
 	respond 404
 }
