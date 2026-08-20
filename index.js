@@ -12,6 +12,7 @@ import fastifyStatic from "@fastify/static";
 import { WebSocket, WebSocketServer } from "ws";
 import { server as wisp, logging } from "@mercuryworkshop/wisp-js/server";
 import { scramjetPath } from "@mercuryworkshop/scramjet/path";
+import { lcRelayUpgrade } from "./lc-relay.js";
 
 const _require = createRequire(import.meta.url);
 const epoxypath = dirname(_require.resolve("@mercuryworkshop/epoxy-transport"));
@@ -395,6 +396,12 @@ function handleupgrade(req, socket, head) {
 
 	if (req.url.startsWith("/wsproxy/")) {
 		proxywsconnection(req, socket, head);
+		return;
+	}
+
+	// Lethal Company relay — game's WispRelayTransport dials wss://<origin>/lc-relay
+	if (req.url === "/lc-relay" || req.url.startsWith("/lc-relay/")) {
+		lcRelayUpgrade(req, socket, head);
 		return;
 	}
 
