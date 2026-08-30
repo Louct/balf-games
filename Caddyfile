@@ -299,10 +299,18 @@ https:// {
 	# GitLab-hosted game builds. Statically's GitLab edge can stall large Unity
 	# parts at a few hundred bytes/sec; stream the raw files through our own
 	# origin instead so browsers also avoid cross-origin restrictions.
+	@game_javascript path_regexp game_javascript ^/game-assets/.*\.js$
+	header @game_javascript Content-Type "application/javascript; charset=utf-8"
+
+	@game_stylesheet path_regexp game_stylesheet ^/game-assets/.*\.css$
+	header @game_stylesheet Content-Type "text/css; charset=utf-8"
+
 	handle_path /game-assets/1games-rips/* {
 		rewrite * /mynamescrax/1games-rips/-/raw/main{path}
 		reverse_proxy gitlab.com:443 {
 			header_up Host gitlab.com
+			header_down -Content-Disposition
+			header_down -X-Content-Type-Options
 			transport http {
 				tls
 			}
@@ -313,6 +321,8 @@ https:// {
 		rewrite * /mynamescrax/gamesforaetheris/-/raw/main{path}
 		reverse_proxy gitlab.com:443 {
 			header_up Host gitlab.com
+			header_down -Content-Disposition
+			header_down -X-Content-Type-Options
 			transport http {
 				tls
 			}
