@@ -17,17 +17,35 @@ echo "-> Reloading Caddy..."
 caddy reload --config /etc/caddy/Caddyfile
 
 echo "-> Restarting app..."
-# Kill any orphaned aetheris instance BEFORE pm2 restarts it (2026-08-20
-# incident: pm2 restart orphans the old node process, which keeps :8080 bound;
-# the fresh instance then EADDRINUSE-loops while the orphan serves the site).
-# Scoped by working directory so other node apps (crax-gpt, profile-views) are
-# never touched. pgrep -f must not match this script itself — it doesn't
-# ("deploy.sh" is not "node index.js").
+# Kill only orphaned Aetheris instances before PM2 restarts its managed one.
+# The previous loop also killed PM2's current PID, allowing PM2 to race us by
+# spawning a replacement while the deploy was still cleaning up port 8080.
+managed_pid="$(pm2 pid "$APP_NAME" 2>/dev/null || true)"
+orphan_pids=()
 for pid in $(pgrep -f 'node index\.js' 2>/dev/null || true); do
-    if [ "$(readlink "/proc/$pid/cwd" 2>/dev/null)" = "$APP_DIR" ]; then
+    if [ "$pid" != "$managed_pid" ] && [ "$(readlink "/proc/$pid/cwd" 2>/dev/null)" = "$APP_DIR" ]; then
+        echo "-> Stopping orphaned Aetheris PID $pid..."
         kill "$pid" 2>/dev/null || true
+        orphan_pids+=("$pid")
     fi
 done
+
+# Do not restart until every orphan has actually released its listener.
+for pid in "${orphan_pids[@]}"; do
+    for _ in {1..50}; do
+        kill -0 "$pid" 2>/dev/null || break
+        sleep 0.1
+    done
+    if kill -0 "$pid" 2>/dev/null; then
+        echo "-> Orphan PID $pid ignored SIGTERM; sending SIGKILL..."
+        kill -KILL "$pid" 2>/dev/null || true
+        for _ in {1..20}; do
+            kill -0 "$pid" 2>/dev/null || break
+            sleep 0.1
+        done
+    fi
+done
+
 if pm2 describe "$APP_NAME" > /dev/null 2>&1; then
     pm2 restart "$APP_NAME"
 else

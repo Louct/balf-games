@@ -1255,7 +1255,7 @@ process.on("SIGTERM", shutdown);
 
 function findPortOwnerPid(port) {
 	try {
-		const hexport = port.toString(16).padStart(4, "0");
+		const hexport = port.toString(16).toUpperCase().padStart(4, "0");
 		let inode = null;
 		for (const file of ["/proc/net/tcp", "/proc/net/tcp6"]) {
 			let txt;
@@ -1263,8 +1263,10 @@ function findPortOwnerPid(port) {
 			for (const line of txt.split("\n")) {
 				const parts = line.trim().split(/\s+/);
 				if (parts.length < 10) continue;
-				// fields: sl local_address rem_address st ... inode
-				const [local, st, , , , , , , , socketinode] = parts;
+				// /proc/net/tcp* fields are: sl, local_address, rem_address,
+				// st, tx_queue:rx_queue, tr:tm->when, retrnsmt, uid,
+				// timeout, inode. Keep these explicit so `sl` cannot shift them.
+				const local = parts[1], st = parts[3], socketinode = parts[9];
 				if (st === "0A" /* LISTEN */ && local.endsWith(":" + hexport)) {
 					inode = socketinode;
 					break;
