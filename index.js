@@ -13,6 +13,8 @@ import { WebSocket, WebSocketServer } from "ws";
 import { server as wisp, logging } from "@mercuryworkshop/wisp-js/server";
 import { scramjetPath } from "@mercuryworkshop/scramjet/path";
 import { lcRelayUpgrade } from "./lc-relay.js";
+import { registerMovieRelay } from "./movie-relay.js";
+
 
 // Load local development configuration before any feature reads process.env.
 // Values supplied by the host environment keep precedence over .env values.
@@ -479,6 +481,9 @@ const fastify = Fastify({
 			})
 			.on("upgrade", handleupgrade),
 });
+
+registerMovieRelay(fastify);
+
 
 
 

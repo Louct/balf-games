@@ -329,10 +329,6 @@ https:// {
 		}
 	}
 
-	# -- Movie providers (Caddy proxy, no Scramjet) -----------------------
-	import movie_proxy /proxy/vidsrc vidsrc.to
-	import movie_proxy /proxy/2embed www.2embed.cc
-	import movie_proxy /proxy/superembed multiembed.mov
 
 	# Online counter
 	@sse path /online

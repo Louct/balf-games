@@ -52,7 +52,7 @@
                 <div class="ep-btns" id="epBtns"></div>
             </div>
             <div class="player-wrap">
-                <iframe id="player" allowfullscreen webkitallowfullscreen allow="autoplay; fullscreen; encrypted-media; picture-in-picture" referrerpolicy="origin"></iframe>
+                <iframe id="player" allowfullscreen webkitallowfullscreen allow="fullscreen; picture-in-picture" referrerpolicy="origin"></iframe>
                 <div class="player-status hidden" id="playerStatus">Loading provider…</div>
             </div>
         </div>
@@ -64,10 +64,42 @@
         var TMDB_API = "https://api.themoviedb.org/3";
 
         var MOVIES_SOURCES = [
-            { name: "VidSrc",  url: function(t,id,s,e) { return "/proxy/vidsrc/embed/" + t + "/" + id + (t==="tv" ? "/"+s+"/"+e : ""); } },
-            { name: "2Embed",  url: function(t,id,s,e) { return t==="movie" ? "/proxy/2embed/embed/"+id : "/proxy/2embed/embedtv/"+id+"?s="+s+"&e="+e; } },
-            { name: "SuperEmbed", url: function(t,id,s,e) { return "/proxy/superembed/?video_id=" + id + "&tmdb=1" + (t==="tv" ? "&s="+s+"&e="+e : ""); } },
+            {
+                // Cloudflare-challenges non-browser clients on its media CDN
+                // (see CLAUDE.md findings), so this source loads direct: the
+                // real browser passes the challenge itself. Trade-off: ads
+                // run and the provider sees the visitor IP (uBlock helps).
+                name: "VidSrc (vidsrcme.ru) • direct",
+                direct: true,
+                url: function(t, id, s, e) {
+                    return "https://vidsrcme.ru/embed/" + (t === "movie" ? "movie/" + id : "tv/" + id + "/" + s + "/" + e);
+                }
+            },
+            {
+                name: "2Embed (2embed.cc)",
+                url: function(t, id, s, e) {
+                    var upstream = t === "movie" ? "https://www.2embed.cc/embed/" + id : "https://www.2embed.cc/embedtv/" + id + "?s=" + s + "&e=" + e;
+                    return "/movie-proxy?url=" + encodeURIComponent(upstream);
+                }
+            },
+            {
+                name: "SmashyStream",
+                url: function(t, id, s, e) {
+                    var upstream = "https://embed.smashystream.com/playere.php?tmdb=" + id + (t === "tv" ? "&season=" + s + "&episode=" + e : "");
+                    return "/movie-proxy?url=" + encodeURIComponent(upstream);
+                }
+            },
+            {
+                name: "VidSrc.to (vidsrc.to)",
+                url: function(t, id, s, e) {
+                    var upstream = "https://vidsrc.to/embed/" + (t === "movie" ? "movie/" + id : "tv/" + id + "/" + s + "/" + e);
+                    return "/movie-proxy?url=" + encodeURIComponent(upstream);
+                }
+            }
         ];
+
+
+
 
         var grid = document.getElementById("grid");
         var statusEl = document.getElementById("status");
@@ -336,12 +368,15 @@
             var e = currentEp ? currentEp.episode : 1;
             var proxyUrl = src.url(t, id, s, e);
 
-            playerStatus.textContent = "Loading provider…";
+            playerStatus.textContent = src.direct ? "Loading provider (direct)…" : "Loading provider…";
             playerStatus.classList.remove("hidden");
 
             player.onload = function() {
                 playerStatus.classList.add("hidden");
-                blockAds(player);
+                // blockAds strips subframes/scripts by URL substring — that
+                // breaks direct embeds (their decoder/ads share the page),
+                // so only apply it to proxied sources.
+                if (!src.direct) blockAds(player);
             };
             player.src = proxyUrl;
         }
