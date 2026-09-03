@@ -14,6 +14,18 @@ import { server as wisp, logging } from "@mercuryworkshop/wisp-js/server";
 import { scramjetPath } from "@mercuryworkshop/scramjet/path";
 import { lcRelayUpgrade } from "./lc-relay.js";
 
+// Load local development configuration before any feature reads process.env.
+// Values supplied by the host environment keep precedence over .env values.
+if (typeof process.loadEnvFile === "function") {
+	try {
+		process.loadEnvFile();
+	} catch (error) {
+		if (error && error.code !== "ENOENT") {
+			console.warn("[config] Could not load .env:", error.message);
+		}
+	}
+}
+
 const _require = createRequire(import.meta.url);
 const epoxypath = dirname(_require.resolve("@mercuryworkshop/epoxy-transport"));
 // libcurl-transport 2.0.5 dropped the libcurlPath helper entirely — the whole
@@ -1038,6 +1050,145 @@ fastify.post("/api/dm-inbox/read/:other", async (req, reply) => {
 	reply.send({ ok: true });
 });
 
+
+
+
+
+// --- crax-gpt AI proxy ---
+// The API key lives server-side in env so it's never shipped to the browser.
+// CRAX_GPT_BASE_URL defaults to the OpenAI-compatible endpoint at gpt.crax.lol.
+// The whole point of proxying is to keep Authorization out of client code;
+// the frontend only ever talks to these two same-origin routes.
+
+const CRAX_GPT_KEY      = process.env.CRAX_GPT_KEY || "";
+const CRAX_GPT_BASE     = (process.env.CRAX_GPT_BASE_URL || "https://gpt.crax.lol/v1").replace(/\/+$/, "");
+const CRAX_GPT_MODEL    = process.env.CRAX_GPT_MODEL || "gpt-5-6-sol";
+const CRAX_GPT_IMG_MODEL = process.env.CRAX_GPT_IMAGE_MODEL || "gpt-image-2";
+
+if (!CRAX_GPT_KEY) {
+	console.warn("[ai] CRAX_GPT_KEY is not set — /api/ai/* endpoints will return 503. Set it in .env to enable AI.");
+}
+
+// Chat Completions — proxies to POST {base}/chat/completions. Streaming is
+// passed straight through so the client can render tokens as they arrive.
+fastify.post("/api/ai/chat", { bodyLimit: 16 * 1024 * 1024 }, async (req, reply) => {
+	if (!CRAX_GPT_KEY) return reply.code(503).send({ ok: false, error: "AI is not configured on this server." });
+	try {
+		const { messages, stream, model, include_reasoning } = req.body || {};
+		if (!Array.isArray(messages) || messages.length === 0) {
+			return reply.code(400).send({ ok: false, error: "messages must be a non-empty array." });
+		}
+		const payload = {
+			model: String(model || CRAX_GPT_MODEL),
+			messages,
+			...(stream === true ? { stream: true } : {}),
+			...(include_reasoning === true ? { include_reasoning: true } : {}),
+		};
+		const res = await fetch(`${CRAX_GPT_BASE}/chat/completions`, {
+			method:  "POST",
+			headers: { "Content-Type": "application/json", "Authorization": `Bearer ${CRAX_GPT_KEY}` },
+			body:    JSON.stringify(payload),
+		});
+
+		if (stream === true) {
+			reply.hijack();
+			reply.raw.writeHead(res.status, { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", "Connection": "keep-alive" });
+			if (!res.body) { reply.raw.end(); return; }
+			const reader = res.body.getReader();
+			const sink = reply.raw;
+			const pump = async () => {
+				try {
+					for (;;) {
+						const { value, done } = await reader.read();
+						if (done) break;
+						if (value) sink.write(value);
+					}
+				} catch (err) {
+					console.error("[ai] stream relay error:", err);
+				} finally {
+					sink.end();
+				}
+			};
+			pump();
+			return;
+		}
+
+		const data = await res.json().catch(() => ({}));
+		if (!res.ok) {
+			const errmsg = (data.error && (data.error.message || data.error.code)) || `Upstream ${res.status}`;
+			return reply.code(res.status).send({ ok: false, error: errmsg });
+		}
+		reply.send(data);
+	} catch (e) {
+		console.error("[ai] chat error:", e);
+		reply.code(502).send({ ok: false, error: "AI backend unreachable." });
+	}
+});
+
+// Models list — proxied so the client can build a model picker without
+// exposing the key.
+fastify.get("/api/ai/models", async (_req, reply) => {
+	if (!CRAX_GPT_KEY) return reply.code(503).send({ ok: false, error: "AI is not configured on this server." });
+	try {
+		const res = await fetch(`${CRAX_GPT_BASE}/models`, {
+			headers: { "Authorization": `Bearer ${CRAX_GPT_KEY}` },
+		});
+		const data = await res.json().catch(() => ({}));
+		if (!res.ok) return reply.code(res.status).send({ ok: false, error: (data.error && data.error.message) || `Upstream ${res.status}` });
+		// normalize to the site's { ok, data } convention
+		reply.send({ ok: true, data: Array.isArray(data.data) ? data.data : [] });
+	} catch (e) {
+		console.error("[ai] models error:", e);
+		reply.code(502).send({ ok: false, error: "AI backend unreachable." });
+	}
+});
+
+// Image generation — proxies to POST {base}/images/generations. Returns the
+// standard OpenAI images payload (url or b64_json) to the client.
+fastify.post("/api/ai/images", { bodyLimit: 24 * 1024 * 1024 }, async (req, reply) => {
+	if (!CRAX_GPT_KEY) return reply.code(503).send({ ok: false, error: "AI is not configured on this server." });
+	try {
+		const { prompt, model, n, size, images } = req.body || {};
+		if (!prompt || String(prompt).length > 4000) {
+			return reply.code(400).send({ ok: false, error: "prompt must be a non-empty string (max 4000 chars)." });
+		}
+		if (images !== undefined && !Array.isArray(images)) {
+			return reply.code(400).send({ ok: false, error: "images must be an array." });
+		}
+		const referenceImages = Array.isArray(images) ? images : [];
+		if (referenceImages.length > 4) {
+			return reply.code(400).send({ ok: false, error: "A maximum of four reference images is allowed." });
+		}
+		for (const image of referenceImages) {
+			const match = typeof image === "string" && image.match(/^data:image\/(png|jpeg|webp|gif);base64,([A-Za-z0-9+/=]+)$/);
+			if (!match) return reply.code(400).send({ ok: false, error: "Every reference must be a PNG, JPG, WebP or GIF data URL." });
+			if (Buffer.from(match[2], "base64").length > 4 * 1024 * 1024) {
+				return reply.code(400).send({ ok: false, error: "Reference images must be 4 MB or smaller." });
+			}
+		}
+		const payload = {
+			model: String(model || CRAX_GPT_IMG_MODEL),
+			prompt: String(prompt),
+			...(n ? { n } : {}),
+			...(size ? { size } : {}),
+			...(referenceImages.length ? { images: referenceImages } : {}),
+		};
+		const res = await fetch(`${CRAX_GPT_BASE}/images/generations`, {
+			method:  "POST",
+			headers: { "Content-Type": "application/json", "Authorization": `Bearer ${CRAX_GPT_KEY}` },
+			body:    JSON.stringify(payload),
+		});
+		const data = await res.json().catch(() => ({}));
+		if (!res.ok) {
+			const errmsg = (data.error && (data.error.message || data.error.code)) || `Upstream ${res.status}`;
+			return reply.code(res.status).send({ ok: false, error: errmsg });
+		}
+		reply.send(data);
+	} catch (e) {
+		console.error("[ai] images error:", e);
+		reply.code(502).send({ ok: false, error: "AI backend unreachable." });
+	}
+});
 
 
 fastify.get("/recover",    (_req, reply) => reply.redirect("/recover.html", 302));
