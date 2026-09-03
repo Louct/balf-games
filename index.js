@@ -1064,6 +1064,7 @@ const CRAX_GPT_KEY      = process.env.CRAX_GPT_KEY || "";
 const CRAX_GPT_BASE     = (process.env.CRAX_GPT_BASE_URL || "https://gpt.crax.lol/v1").replace(/\/+$/, "");
 const CRAX_GPT_MODEL    = process.env.CRAX_GPT_MODEL || "gpt-5-6-sol";
 const CRAX_GPT_IMG_MODEL = process.env.CRAX_GPT_IMAGE_MODEL || "gpt-image-2";
+const MAX_GENERATED_IMAGE_BYTES = 20 * 1024 * 1024;
 
 if (!CRAX_GPT_KEY) {
 	console.warn("[ai] CRAX_GPT_KEY is not set — /api/ai/* endpoints will return 503. Set it in .env to enable AI.");
@@ -1182,6 +1183,28 @@ fastify.post("/api/ai/images", { bodyLimit: 24 * 1024 * 1024 }, async (req, repl
 		if (!res.ok) {
 			const errmsg = (data.error && (data.error.message || data.error.code)) || `Upstream ${res.status}`;
 			return reply.code(res.status).send({ ok: false, error: errmsg });
+		}
+		// Some image backends return a short-lived URL on a separate CDN. School
+		// filters commonly allow Aetheris but block that CDN, leaving an empty
+		// image on managed iPads. Fetch URL results here and return base64 so the
+		// browser never has to contact the third-party image host directly.
+		if (Array.isArray(data.data)) {
+			data.data = await Promise.all(data.data.map(async (image) => {
+				if (!image || image.b64_json || !image.url) return image;
+				const imageUrl = new URL(image.url);
+				if (imageUrl.protocol !== "https:") throw new Error("Image backend returned an unsafe URL.");
+				const imageRes = await fetch(imageUrl, { redirect: "follow" });
+				if (!imageRes.ok) throw new Error(`Generated image download failed (${imageRes.status}).`);
+				const contentType = String(imageRes.headers.get("content-type") || "").split(";", 1)[0].toLowerCase();
+				if (!/^image\/(png|jpeg|webp|gif)$/.test(contentType)) throw new Error("Image backend returned an unsupported file type.");
+				const contentLength = Number(imageRes.headers.get("content-length") || 0);
+				if (contentLength > MAX_GENERATED_IMAGE_BYTES) throw new Error("Generated image is too large.");
+				const bytes = Buffer.from(await imageRes.arrayBuffer());
+				if (bytes.length > MAX_GENERATED_IMAGE_BYTES) throw new Error("Generated image is too large.");
+				const rest = { ...image };
+				delete rest.url;
+				return { ...rest, b64_json: bytes.toString("base64"), mime_type: contentType };
+			}));
 		}
 		reply.send(data);
 	} catch (e) {
