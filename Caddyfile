@@ -353,7 +353,7 @@ https:// {
 			header_up Host multiembed.mov
 			header_up Origin https://multiembed.mov
 			header_up Referer https://multiembed.mov/
-			header_down Location "^https://streamingnow\\.mov(.*)$" "/proxy/streamingnow$1"
+			header_down Location "^https://streamingnow\.mov(.*)$" "/proxy/streamingnow$1"
 			header_down -X-Frame-Options
 			header_down -Content-Security-Policy
 			header_down -Content-Security-Policy-Report-Only
