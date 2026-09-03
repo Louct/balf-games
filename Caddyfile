@@ -92,7 +92,7 @@ http://127.0.0.1:9999 {
 		}
 	}
 	@movie_origin_{args[0]} {
-		header_regexp Cookie "(^|;\\s*)aetheris_movie_origin={args[1]}(;|$)"
+		header Cookie "*aetheris_movie_origin={args[1]}*"
 		not path /proxy/*
 	}
 	handle @movie_origin_{args[0]} {
@@ -376,6 +376,7 @@ https:// {
 	import movie_origin_proxy vsembed vsembed vsembed.ru
 	import movie_origin_proxy videm videm videm.xyz
 	import movie_origin_proxy streamingnow streamingnow streamingnow.mov
+	import movie_origin_proxy vidsrc_mirror vidsrc-mirror vidsrcme.ru
 
 	# Player APIs and video edges currently used by the providers above.
 	# Keep these paths in sync with MOVIE_PROXY_HOSTS in movies.html.

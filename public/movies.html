@@ -66,13 +66,14 @@
         var MOVIES_SOURCES = [
             { name: "VidSrc",  url: function(t,id,s,e) { return "/proxy/vsembed/embed/" + t + "/" + id + (t==="tv" ? "/"+s+"/"+e : "") + "/"; } },
             { name: "2Embed",  url: function(t,id,s,e) { return t==="movie" ? "/proxy/videm/embed/movie/"+id+"?autoplay=true" : "/proxy/videm/embed/tv/"+id+"/"+s+"/"+e+"?autoplay=true"; } },
-            { name: "SuperEmbed", url: function(t,id,s,e) { return "/proxy/superembed/?video_id=" + id + "&tmdb=1" + (t==="tv" ? "&s="+s+"&e="+e : ""); } },
+            { name: "VidSrc Mirror", url: function(t,id,s,e) { return "/proxy/vidsrc-mirror/embed/" + t + "?tmdb=" + id + (t==="tv" ? "&season="+s+"&episode="+e : ""); } },
         ];
 
         var MOVIE_PROXY_HOSTS = {
             "vsembed.ru": "/proxy/vsembed",
             "videm.xyz": "/proxy/videm",
             "streamingnow.mov": "/proxy/streamingnow",
+            "vidsrcme.ru": "/proxy/vidsrc-mirror",
             "data.vidsrcme.ru": "/proxy/vidsrc-data",
             "streamvaultsrc.click": "/proxy/streamvault",
             "ggu.r61wpiyoy26q75zf436.cfd": "/proxy/vidsrc-media"
