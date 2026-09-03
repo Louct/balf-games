@@ -74,6 +74,27 @@ http://127.0.0.1:9999 {
 		}
 	}
 }
+(movie_origin_proxy) {
+	@movie_origin_{args[0]} {
+		header_regexp Referer "^https://[^/]+/proxy/{args[1]}/"
+		not path /proxy/*
+	}
+	handle @movie_origin_{args[0]} {
+		reverse_proxy {args[2]}:443 {
+			header_up Host {args[2]}
+			header_up Origin https://{args[2]}
+			header_up Referer https://{args[2]}/
+			header_down -X-Frame-Options
+			header_down -Content-Security-Policy
+			header_down -Content-Security-Policy-Report-Only
+			header_down -Cross-Origin-Resource-Policy
+			transport http {
+				tls
+				tls_insecure_skip_verify
+			}
+		}
+	}
+}
 (veck_init) {
 	handle_path /proxy/{args[0]}/api/init {
 		header Content-Type application/json
@@ -339,6 +360,9 @@ https:// {
 	import movie_proxy /proxy/vsembed vsembed.ru
 	import movie_proxy /proxy/videm videm.xyz
 	import movie_proxy /proxy/streamingnow streamingnow.mov
+	import movie_origin_proxy vsembed vsembed vsembed.ru
+	import movie_origin_proxy videm videm videm.xyz
+	import movie_origin_proxy streamingnow streamingnow streamingnow.mov
 
 	# Player APIs and video edges currently used by the providers above.
 	# Keep these paths in sync with MOVIE_PROXY_HOSTS in movies.html.
