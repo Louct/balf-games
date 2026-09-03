@@ -332,7 +332,37 @@ https:// {
 	# -- Movie providers (Caddy proxy, no Scramjet) -----------------------
 	import movie_proxy /proxy/vidsrc vidsrc.to
 	import movie_proxy /proxy/2embed www.2embed.cc
-	import movie_proxy /proxy/superembed multiembed.mov
+
+	# Load the providers' actual player origins through Caddy as well. The
+	# wrapper pages otherwise send managed iPads straight back to blocked
+	# third-party hosts.
+	import movie_proxy /proxy/vsembed vsembed.ru
+	import movie_proxy /proxy/videm videm.xyz
+	import movie_proxy /proxy/streamingnow streamingnow.mov
+
+	# Player APIs and video edges currently used by the providers above.
+	# Keep these paths in sync with MOVIE_PROXY_HOSTS in movies.html.
+	import movie_proxy /proxy/vidsrc-data data.vidsrcme.ru
+	import movie_proxy /proxy/streamvault streamvaultsrc.click
+	import movie_proxy /proxy/vidsrc-media ggu.r61wpiyoy26q75zf436.cfd
+
+	# MultiEmbed redirects to its player on streamingnow.mov. Rewrite that
+	# redirect so Safari never leaves the Aetheris/Caddy origin.
+	handle_path /proxy/superembed/* {
+		reverse_proxy multiembed.mov:443 {
+			header_up Host multiembed.mov
+			header_up Origin https://multiembed.mov
+			header_up Referer https://multiembed.mov/
+			header_down Location "^https://streamingnow\\.mov(.*)$" "/proxy/streamingnow$1"
+			header_down -X-Frame-Options
+			header_down -Content-Security-Policy
+			header_down -Content-Security-Policy-Report-Only
+			transport http {
+				tls
+				tls_insecure_skip_verify
+			}
+		}
+	}
 
 	# Online counter
 	@sse path /online

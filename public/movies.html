@@ -64,10 +64,30 @@
         var TMDB_API = "https://api.themoviedb.org/3";
 
         var MOVIES_SOURCES = [
-            { name: "VidSrc",  url: function(t,id,s,e) { return "/proxy/vidsrc/embed/" + t + "/" + id + (t==="tv" ? "/"+s+"/"+e : ""); } },
-            { name: "2Embed",  url: function(t,id,s,e) { return t==="movie" ? "/proxy/2embed/embed/"+id : "/proxy/2embed/embedtv/"+id+"?s="+s+"&e="+e; } },
+            { name: "VidSrc",  url: function(t,id,s,e) { return "/proxy/vsembed/embed/" + t + "/" + id + (t==="tv" ? "/"+s+"/"+e : "") + "/"; } },
+            { name: "2Embed",  url: function(t,id,s,e) { return t==="movie" ? "/proxy/videm/embed/movie/"+id+"?autoplay=true" : "/proxy/videm/embed/tv/"+id+"/"+s+"/"+e+"?autoplay=true"; } },
             { name: "SuperEmbed", url: function(t,id,s,e) { return "/proxy/superembed/?video_id=" + id + "&tmdb=1" + (t==="tv" ? "&s="+s+"&e="+e : ""); } },
         ];
+
+        var MOVIE_PROXY_HOSTS = {
+            "vsembed.ru": "/proxy/vsembed",
+            "videm.xyz": "/proxy/videm",
+            "streamingnow.mov": "/proxy/streamingnow",
+            "data.vidsrcme.ru": "/proxy/vidsrc-data",
+            "streamvaultsrc.click": "/proxy/streamvault",
+            "ggu.r61wpiyoy26q75zf436.cfd": "/proxy/vidsrc-media"
+        };
+
+        function caddyMovieUrl(value) {
+            if (!value || typeof value !== "string") return value;
+            try {
+                var url = new URL(value, location.href);
+                var prefix = MOVIE_PROXY_HOSTS[url.hostname.toLowerCase()];
+                return prefix ? prefix + url.pathname + url.search + url.hash : value;
+            } catch (_) {
+                return value;
+            }
+        }
 
         var grid = document.getElementById("grid");
         var statusEl = document.getElementById("status");
@@ -93,7 +113,6 @@
         var currentEp = null;
         var searchTimer = null;
         var isLoadingMore = false;
-
         function setType(type) {
             currentType = type;
             document.querySelectorAll(".mode-btn").forEach(function(b) { b.classList.toggle("active", b.dataset.type === type); });
@@ -303,6 +322,30 @@
                 if (!win) return;
                 win.open = function() { return null; };
                 var doc = win.document;
+                var originalFetch = win.fetch && win.fetch.bind(win);
+                if (originalFetch) {
+                    win.fetch = function(input, init) {
+                        if (typeof input === "string") input = caddyMovieUrl(input);
+                        else if (input && input.url) input = new Request(caddyMovieUrl(input.url), input);
+                        return originalFetch(input, init);
+                    };
+                }
+                if (win.XMLHttpRequest) {
+                    var originalOpen = win.XMLHttpRequest.prototype.open;
+                    win.XMLHttpRequest.prototype.open = function(method, url) {
+                        arguments[1] = caddyMovieUrl(url);
+                        return originalOpen.apply(this, arguments);
+                    };
+                }
+                function rewriteNode(n) {
+                    if (!n || !n.getAttribute) return;
+                    ["src", "href", "poster"].forEach(function(attr) {
+                        var value = n.getAttribute(attr);
+                        var rewritten = caddyMovieUrl(value);
+                        if (rewritten !== value) n.setAttribute(attr, rewritten);
+                    });
+                }
+                doc.querySelectorAll("[src],[href],[poster]").forEach(rewriteNode);
                 doc.addEventListener("click", function(e) {
                     var a = e.target.closest ? e.target.closest("a") : null;
                     if (a && a.target && a.target !== "_self") {
@@ -313,6 +356,8 @@
                 var obs = new MutationObserver(function(muts) {
                     muts.forEach(function(m) {
                         m.addedNodes.forEach(function(n) {
+                            rewriteNode(n);
+                            if (n.querySelectorAll) n.querySelectorAll("[src],[href],[poster]").forEach(rewriteNode);
                             if (n.tagName === "IFRAME" || n.tagName === "SCRIPT") {
                                 var s = (n.src || "").toLowerCase();
                                 if (s && !s.includes(location.hostname) && !s.includes("player") && !s.includes("embed")) {
