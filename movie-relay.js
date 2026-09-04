@@ -176,6 +176,11 @@ function rewriteHtml(html, targetUrl) {
 
 		try {
 			const abs = new URL(decoded, href).href;
+			// The subtitle picker uses this value as a prefix and appends a
+			// country code (for example, `us.png`) at runtime. Proxying the
+			// prefix first puts that suffix after our `referer` query parameter
+			// and produces malformed requests such as `autoplay=trueus.png`.
+			if (abs.startsWith("https://flagcdn.com/w40/")) return match;
 			const proxied = `${PROXY_ROUTE}?url=${encodeURIComponent(abs)}&referer=${encodeURIComponent(href)}`;
 			return `${attr}=${quote}${proxied}${quote}`;
 		} catch {
@@ -345,7 +350,7 @@ function rewriteJson(jsonText, targetUrl) {
 }
 
 export function registerMovieRelay(fastify) {
-	fastify.get(PROXY_ROUTE, async (req, reply) => {
+	const handleMovieProxy = async (req, reply) => {
 		let rawTarget = req.query.url;
 		if (!rawTarget || typeof rawTarget !== "string") {
 			reply.code(400).send("Missing url query parameter");
@@ -605,5 +610,37 @@ export function registerMovieRelay(fastify) {
 			reply.raw.setHeader("Content-Type", "application/octet-stream");
 			reply.send(decompressed);
 		}
+	};
+
+	fastify.get(PROXY_ROUTE, handleMovieProxy);
+
+	// Videm's subtitle menu loads its signed subtitle endpoint from a worker.
+	// Worker requests are outside the page-level fetch/XHR hooks, so the
+	// relative `/api.php?a=sub&ref=...` otherwise lands on Aetheris and 404s.
+	// Keep this compatibility route deliberately limited to subtitle requests.
+	fastify.get("/api.php", async (req, reply) => {
+		if (req.query.a !== "sub" || typeof req.query.ref !== "string" || !req.query.ref) {
+			return reply.code(404).send("Not found");
+		}
+
+		let subtitleUrl;
+		try {
+			// The first section of Videm's signed ref is a base64url JSON payload
+			// containing the actual VTT URL. Calling Videm's API server-side is
+			// rejected because its signature is also bound to browser state, while
+			// the signed CDN URL itself is intentionally fetchable by the player.
+			const encodedPayload = req.query.ref.split(".", 1)[0];
+			const payload = JSON.parse(Buffer.from(encodedPayload, "base64url").toString("utf8"));
+			if (!payload || typeof payload.u !== "string") throw new Error("Missing subtitle URL");
+			subtitleUrl = payload.u;
+		} catch {
+			return reply.code(400).send("Invalid subtitle reference");
+		}
+
+		req.query = {
+			url: subtitleUrl,
+			referer: "https://videm.xyz/",
+		};
+		return handleMovieProxy(req, reply);
 	});
 }

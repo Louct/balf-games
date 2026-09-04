@@ -1070,6 +1070,36 @@ const CRAX_GPT_BASE     = (process.env.CRAX_GPT_BASE_URL || "https://gpt.crax.lo
 const CRAX_GPT_MODEL    = process.env.CRAX_GPT_MODEL || "gpt-5-6-sol";
 const CRAX_GPT_IMG_MODEL = process.env.CRAX_GPT_IMAGE_MODEL || "gpt-image-2";
 const MAX_GENERATED_IMAGE_BYTES = 20 * 1024 * 1024;
+const AI_MODELS_TIMEOUT_MS = 15 * 1000;
+const AI_CHAT_TIMEOUT_MS = 5 * 60 * 1000;
+const AI_IMAGE_TIMEOUT_MS = 3 * 60 * 1000;
+const AI_IMAGE_DOWNLOAD_TIMEOUT_MS = 30 * 1000;
+
+function aiTimeout(ms) {
+	return AbortSignal.timeout(ms);
+}
+
+function isTimeoutError(error) {
+	return error && (error.name === "AbortError" || error.name === "TimeoutError");
+}
+
+async function readAiResponse(res) {
+	const text = await res.text();
+	if (!text) return {};
+	try {
+		return JSON.parse(text);
+	} catch {
+		return { error: { message: text.slice(0, 500) } };
+	}
+}
+
+function sendAiFailure(reply, error, operation) {
+	console.error(`[ai] ${operation} error:`, error);
+	if (isTimeoutError(error)) {
+		return reply.code(504).send({ ok: false, error: "The AI request timed out. Please try again." });
+	}
+	return reply.code(502).send({ ok: false, error: "Could not reach the AI service. Please try again." });
+}
 
 if (!CRAX_GPT_KEY) {
 	console.warn("[ai] CRAX_GPT_KEY is not set — /api/ai/* endpoints will return 503. Set it in .env to enable AI.");
@@ -1077,7 +1107,7 @@ if (!CRAX_GPT_KEY) {
 
 // Chat Completions — proxies to POST {base}/chat/completions. Streaming is
 // passed straight through so the client can render tokens as they arrive.
-fastify.post("/api/ai/chat", { bodyLimit: 16 * 1024 * 1024 }, async (req, reply) => {
+fastify.post("/api/ai/chat", { bodyLimit: 20 * 1024 * 1024 }, async (req, reply) => {
 	if (!CRAX_GPT_KEY) return reply.code(503).send({ ok: false, error: "AI is not configured on this server." });
 	try {
 		const { messages, stream, model, include_reasoning } = req.body || {};
@@ -1094,9 +1124,15 @@ fastify.post("/api/ai/chat", { bodyLimit: 16 * 1024 * 1024 }, async (req, reply)
 			method:  "POST",
 			headers: { "Content-Type": "application/json", "Authorization": `Bearer ${CRAX_GPT_KEY}` },
 			body:    JSON.stringify(payload),
+			signal:  aiTimeout(AI_CHAT_TIMEOUT_MS),
 		});
 
 		if (stream === true) {
+			if (!res.ok) {
+				const data = await readAiResponse(res);
+				const errmsg = (data.error && (data.error.message || data.error.code)) || `Upstream ${res.status}`;
+				return reply.code(res.status).send({ ok: false, error: errmsg });
+			}
 			reply.hijack();
 			reply.raw.writeHead(res.status, { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", "Connection": "keep-alive" });
 			if (!res.body) { reply.raw.end(); return; }
@@ -1119,15 +1155,14 @@ fastify.post("/api/ai/chat", { bodyLimit: 16 * 1024 * 1024 }, async (req, reply)
 			return;
 		}
 
-		const data = await res.json().catch(() => ({}));
+		const data = await readAiResponse(res);
 		if (!res.ok) {
 			const errmsg = (data.error && (data.error.message || data.error.code)) || `Upstream ${res.status}`;
 			return reply.code(res.status).send({ ok: false, error: errmsg });
 		}
 		reply.send(data);
 	} catch (e) {
-		console.error("[ai] chat error:", e);
-		reply.code(502).send({ ok: false, error: "AI backend unreachable." });
+		sendAiFailure(reply, e, "chat");
 	}
 });
 
@@ -1138,14 +1173,14 @@ fastify.get("/api/ai/models", async (_req, reply) => {
 	try {
 		const res = await fetch(`${CRAX_GPT_BASE}/models`, {
 			headers: { "Authorization": `Bearer ${CRAX_GPT_KEY}` },
+			signal: aiTimeout(AI_MODELS_TIMEOUT_MS),
 		});
-		const data = await res.json().catch(() => ({}));
+		const data = await readAiResponse(res);
 		if (!res.ok) return reply.code(res.status).send({ ok: false, error: (data.error && data.error.message) || `Upstream ${res.status}` });
 		// normalize to the site's { ok, data } convention
 		reply.send({ ok: true, data: Array.isArray(data.data) ? data.data : [] });
 	} catch (e) {
-		console.error("[ai] models error:", e);
-		reply.code(502).send({ ok: false, error: "AI backend unreachable." });
+		sendAiFailure(reply, e, "models");
 	}
 });
 
@@ -1183,8 +1218,9 @@ fastify.post("/api/ai/images", { bodyLimit: 24 * 1024 * 1024 }, async (req, repl
 			method:  "POST",
 			headers: { "Content-Type": "application/json", "Authorization": `Bearer ${CRAX_GPT_KEY}` },
 			body:    JSON.stringify(payload),
+			signal:  aiTimeout(AI_IMAGE_TIMEOUT_MS),
 		});
-		const data = await res.json().catch(() => ({}));
+		const data = await readAiResponse(res);
 		if (!res.ok) {
 			const errmsg = (data.error && (data.error.message || data.error.code)) || `Upstream ${res.status}`;
 			return reply.code(res.status).send({ ok: false, error: errmsg });
@@ -1196,25 +1232,31 @@ fastify.post("/api/ai/images", { bodyLimit: 24 * 1024 * 1024 }, async (req, repl
 		if (Array.isArray(data.data)) {
 			data.data = await Promise.all(data.data.map(async (image) => {
 				if (!image || image.b64_json || !image.url) return image;
-				const imageUrl = new URL(image.url);
-				if (imageUrl.protocol !== "https:") throw new Error("Image backend returned an unsafe URL.");
-				const imageRes = await fetch(imageUrl, { redirect: "follow" });
-				if (!imageRes.ok) throw new Error(`Generated image download failed (${imageRes.status}).`);
-				const contentType = String(imageRes.headers.get("content-type") || "").split(";", 1)[0].toLowerCase();
-				if (!/^image\/(png|jpeg|webp|gif)$/.test(contentType)) throw new Error("Image backend returned an unsupported file type.");
-				const contentLength = Number(imageRes.headers.get("content-length") || 0);
-				if (contentLength > MAX_GENERATED_IMAGE_BYTES) throw new Error("Generated image is too large.");
-				const bytes = Buffer.from(await imageRes.arrayBuffer());
-				if (bytes.length > MAX_GENERATED_IMAGE_BYTES) throw new Error("Generated image is too large.");
-				const rest = { ...image };
-				delete rest.url;
-				return { ...rest, b64_json: bytes.toString("base64"), mime_type: contentType };
+				try {
+					const imageUrl = new URL(image.url);
+					if (imageUrl.protocol !== "https:") throw new Error("Image backend returned an unsafe URL.");
+					const imageRes = await fetch(imageUrl, { redirect: "follow", signal: aiTimeout(AI_IMAGE_DOWNLOAD_TIMEOUT_MS) });
+					if (!imageRes.ok) throw new Error(`Generated image download failed (${imageRes.status}).`);
+					const contentType = String(imageRes.headers.get("content-type") || "").split(";", 1)[0].toLowerCase();
+					if (!/^image\/(png|jpeg|webp|gif)$/.test(contentType)) throw new Error("Image backend returned an unsupported file type.");
+					const contentLength = Number(imageRes.headers.get("content-length") || 0);
+					if (contentLength > MAX_GENERATED_IMAGE_BYTES) throw new Error("Generated image is too large.");
+					const bytes = Buffer.from(await imageRes.arrayBuffer());
+					if (bytes.length > MAX_GENERATED_IMAGE_BYTES) throw new Error("Generated image is too large.");
+					const rest = { ...image };
+					delete rest.url;
+					return { ...rest, b64_json: bytes.toString("base64"), mime_type: contentType };
+				} catch (error) {
+					// Generation succeeded. Preserve the provider URL instead of turning a
+					// secondary CDN relay problem into a failed generation/502 response.
+					console.warn("[ai] generated image relay failed; returning provider URL:", error.message);
+					return image;
+				}
 			}));
 		}
 		reply.send(data);
 	} catch (e) {
-		console.error("[ai] images error:", e);
-		reply.code(502).send({ ok: false, error: "AI backend unreachable." });
+		sendAiFailure(reply, e, "images");
 	}
 });
 
