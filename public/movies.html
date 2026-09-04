@@ -78,7 +78,10 @@
             {
                 name: "2Embed (2embed.cc)",
                 url: function(t, id, s, e) {
-                    var upstream = t === "movie" ? "https://www.2embed.cc/embed/" + id : "https://www.2embed.cc/embedtv/" + id + "?s=" + s + "&e=" + e;
+                    // 2Embed's TV endpoint expects its parameters after a
+                    // literal ampersand. With a normal `?s=...`, it silently
+                    // ignores the selection and always serves S1 E1.
+                    var upstream = t === "movie" ? "https://www.2embed.cc/embed/" + id : "https://www.2embed.cc/embedtv/" + id + "&s=" + s + "&e=" + e;
                     return "/movie-proxy?url=" + encodeURIComponent(upstream);
                 }
             },
