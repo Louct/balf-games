@@ -5,3 +5,6 @@ database
 .env
 notes.md
 mynamescraxbackuphtmlfiles
+log.txt
+server-debug.err
+server-debug.log

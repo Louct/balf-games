@@ -1,143 +1,135 @@
 (function () {
-	if (window.__MOVIE_PROXY_INIT__) return;
-	window.__MOVIE_PROXY_INIT__ = true;
+  if (window.__MOVIE_PROXY_INIT__) return;
+  window.__MOVIE_PROXY_INIT__ = true;
 
-	var PROXY_ROUTE = "/movie-proxy";
-	var targetUrl = window.__MOVIE_PROXY_TARGET__ || location.href;
-	var targetOrigin = window.__MOVIE_PROXY_ORIGIN__ || location.origin;
+  var PROXY_ROUTE = "/movie-proxy";
+  var targetUrl = window.__MOVIE_PROXY_TARGET__ || location.href;
+  var targetOrigin = window.__MOVIE_PROXY_ORIGIN__ || location.origin;
 
-	function debug(label, url, out) {
-		try {
-			console.log("[mp-debug] " + label, url, out ? "-> " + out : "");
-		} catch (e) {}
-	}
+  function debug(label, url, out) {
+    try {
+      if (window.__MOVIE_PROXY_DEBUG__)
+        console.log("[mp-debug] " + label, url, out ? "-> " + out : "");
+    } catch (e) {}
+  }
 
-	function decodeEntities(str) {
-		if (!str) return str;
-		return str
-			.replace(/&amp;/g, "&")
-			.replace(/&lt;/g, "<")
-			.replace(/&gt;/g, ">")
-			.replace(/&quot;/g, '"')
-			.replace(/&#39;/g, "'");
-	}
+  function decodeEntities(str) {
+    if (!str) return str;
+    return str
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'");
+  }
 
-	function toProxyUrl(rawUrl, ref) {
-		if (!rawUrl || typeof rawUrl !== "string") return rawUrl;
-		var trimmed = decodeEntities(rawUrl.trim());
-		if (
-			trimmed.startsWith("data:") ||
-			trimmed.startsWith("blob:") ||
-			trimmed.startsWith("javascript:")
-		) {
-			return rawUrl;
-		}
-		if (
-			trimmed.startsWith(PROXY_ROUTE) ||
-			trimmed.includes("/movie-proxy?url=") ||
-			trimmed.includes(location.host + PROXY_ROUTE)
-		) {
-			return rawUrl;
-		}
-		if (trimmed === "about:blank") return PROXY_ROUTE + "?url=about%3Ablank";
+  function toProxyUrl(rawUrl, ref) {
+    if (!rawUrl || typeof rawUrl !== "string") return rawUrl;
+    var trimmed = decodeEntities(rawUrl.trim());
+    if (
+      trimmed.startsWith("data:") ||
+      trimmed.startsWith("blob:") ||
+      trimmed.startsWith("javascript:")
+    ) {
+      return rawUrl;
+    }
+    if (
+      trimmed.startsWith(PROXY_ROUTE) ||
+      trimmed.includes("/movie-proxy?url=") ||
+      trimmed.includes(location.host + PROXY_ROUTE)
+    ) {
+      return rawUrl;
+    }
+    if (trimmed === "about:blank" || trimmed.charAt(0) === "#") return rawUrl;
 
-		try {
-			var absUrl = new URL(trimmed, targetOrigin).href;
-			var r = ref || targetUrl;
-			var out =
-				PROXY_ROUTE +
-				"?url=" +
-				encodeURIComponent(absUrl) +
-				"&referer=" +
-				encodeURIComponent(r);
-			debug("proxy", trimmed, out);
-			return out;
-		} catch (e) {
-			return rawUrl;
-		}
-	}
+    try {
+      var absUrl = new URL(trimmed, targetUrl).href;
+      var r = ref || targetUrl;
+      var out =
+        PROXY_ROUTE +
+        "?url=" +
+        encodeURIComponent(absUrl) +
+        "&referer=" +
+        encodeURIComponent(r);
+      debug("proxy", trimmed, out);
+      return out;
+    } catch (e) {
+      return rawUrl;
+    }
+  }
 
-	// Overwrite fetch
-	var origFetch = window.fetch;
-	window.fetch = function (input, init) {
-		init = init || {};
-		var url = typeof input === "string" ? input : input && input.url;
-		if (url) {
-			var proxied = toProxyUrl(url);
-			if (typeof input === "string") {
-				input = proxied;
-			} else if (input && input.url) {
-				input = new Request(proxied, input);
-			}
-		}
-		return origFetch.call(this, input, init);
-	};
+  // Overwrite fetch
+  var origFetch = window.fetch;
+  window.fetch = function (input, init) {
+    init = init || {};
+    var isUrl = typeof input === "string" || input instanceof URL;
+    var url = isUrl ? String(input) : input && input.url;
+    if (url) {
+      var proxied = toProxyUrl(url);
+      if (isUrl) {
+        input = proxied;
+      } else if (input && input.url) {
+        input = new Request(proxied, input);
+      }
+    }
+    return origFetch.call(this, input, init);
+  };
 
-	// Overwrite XMLHttpRequest
-	var origOpen = XMLHttpRequest.prototype.open;
-	XMLHttpRequest.prototype.open = function (method, url) {
-		var args = Array.prototype.slice.call(arguments);
-		if (url && typeof url === "string") {
-			args[1] = toProxyUrl(url);
-		}
-		return origOpen.apply(this, args);
-	};
+  // Overwrite XMLHttpRequest
+  var origOpen = XMLHttpRequest.prototype.open;
+  XMLHttpRequest.prototype.open = function (method, url) {
+    var args = Array.prototype.slice.call(arguments);
+    if (url && typeof url === "string") {
+      args[1] = toProxyUrl(url);
+    }
+    return origOpen.apply(this, args);
+  };
 
-	// Overwrite iframe.src & setAttribute
-	try {
-		var iframeProto = HTMLIFrameElement.prototype;
-		var desc = Object.getOwnPropertyDescriptor(iframeProto, "src");
-		if (desc && desc.set) {
-			Object.defineProperty(iframeProto, "src", {
-				get: function () {
-					return desc.get.call(this);
-				},
-				set: function (val) {
-					desc.set.call(this, toProxyUrl(val));
-				},
-				configurable: true,
-				enumerable: true
-			});
-		}
-		var origSetAttr = iframeProto.setAttribute;
-		iframeProto.setAttribute = function (name, val) {
-			if (String(name).toLowerCase() === "src" && val) {
-				val = toProxyUrl(val);
-			}
-			return origSetAttr.call(this, name, val);
-		};
-	} catch (e) {}
+  // Overwrite iframe.src & setAttribute
+  try {
+    var iframeProto = HTMLIFrameElement.prototype;
+    var desc = Object.getOwnPropertyDescriptor(iframeProto, "src");
+    if (desc && desc.set) {
+      Object.defineProperty(iframeProto, "src", {
+        get: function () {
+          return desc.get.call(this);
+        },
+        set: function (val) {
+          desc.set.call(this, toProxyUrl(val));
+        },
+        configurable: true,
+        enumerable: true,
+      });
+    }
+    var origSetAttr = iframeProto.setAttribute;
+    iframeProto.setAttribute = function (name, val) {
+      if (String(name).toLowerCase() === "src" && val) {
+        val = toProxyUrl(val);
+      }
+      return origSetAttr.call(this, name, val);
+    };
+  } catch (e) {}
 
-	// Overwrite video/audio src
-	try {
-		var mediaProto = HTMLMediaElement.prototype;
-		var mediaDesc = Object.getOwnPropertyDescriptor(mediaProto, "src");
-		if (mediaDesc && mediaDesc.set) {
-			Object.defineProperty(mediaProto, "src", {
-				get: function () {
-					return mediaDesc.get.call(this);
-				},
-				set: function (val) {
-					mediaDesc.set.call(this, toProxyUrl(val));
-				},
-				configurable: true,
-				enumerable: true
-			});
-		}
-	} catch (e) {}
+  // Overwrite video/audio src
+  try {
+    var mediaProto = HTMLMediaElement.prototype;
+    var mediaDesc = Object.getOwnPropertyDescriptor(mediaProto, "src");
+    if (mediaDesc && mediaDesc.set) {
+      Object.defineProperty(mediaProto, "src", {
+        get: function () {
+          return mediaDesc.get.call(this);
+        },
+        set: function (val) {
+          mediaDesc.set.call(this, toProxyUrl(val));
+        },
+        configurable: true,
+        enumerable: true,
+      });
+    }
+  } catch (e) {}
 
-	// Prevent popups
-	window.open = function () {
-		return null;
-	};
-
-	// Overwrite dynamic import() so Vite/relative module imports route through
-	// the proxy. Static <script type=module> import() calls can't be fully
-	// intercepted this way, but this covers the common bundled-player case.
-	try {
-		const origImport = window["import"];
-		window["import"] = function (url) {
-			return origImport.call(this, toProxyUrl(url));
-		};
-	} catch (e) {}
+  // Prevent popups
+  window.open = function () {
+    return null;
+  };
 })();

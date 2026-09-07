@@ -1,496 +1,1122 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400&display=swap" />
-  <link rel="stylesheet" href="./css/themes.css?v=2" />
-  <script src="./js/theme.js?v=2"></script>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; }
+  <head>
+    <script src="./js/site.js?v=20260907.1"></script>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400&display=swap"
+    />
+    <link rel="stylesheet" href="./css/themes.css?v=20260907.1" />
+    <script src="./js/theme.js?v=20260907.1"></script>
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
 
-    html, body {
-      margin: 0; padding: 0;
-      width: 100%; height: 100%;
-      overflow: hidden;
-      font-family: 'JetBrains Mono', monospace;
-      background: color-mix(in srgb, var(--navbar, #0a0a0a) 95%, transparent);
-      color: #e5e5e5;
-    }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        font-family: "JetBrains Mono", monospace;
+        background: color-mix(in srgb, var(--navbar, #0a0a0a) 95%, transparent);
+        color: #e5e5e5;
+      }
 
-    /* ── AUTH ─────────────────────────────────── */
-    #auth {
-      display: flex; flex-direction: column; gap: 10px;
-      padding: 18px 16px; height: 100%; justify-content: center;
-    }
-    .auth-title { font-size: 15px; font-weight: 700; text-align: center; margin-bottom: 4px; }
-    .auth-title em { color: var(--accent, #a855f7); font-style: normal; }
-    .tabs {
-      display: flex; background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.09); border-radius: 9px; padding: 3px; gap: 3px;
-    }
-    .tabs button {
-      flex: 1; padding: 5px 0; border-radius: 6px; border: none;
-      background: transparent; color: rgba(255,255,255,0.45);
-      font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit;
-    }
-    .tabs button.active { background: color-mix(in srgb, var(--accent,#a855f7) 30%, transparent); color: #fff; }
-    .fi {
-      height: 38px; border-radius: 9px;
-      background: rgba(255,255,255,0.07); border: 1.5px solid rgba(255,255,255,0.1);
-      display: flex; align-items: center; overflow: hidden; transition: border-color .18s;
-    }
-    .fi:focus-within { border-color: color-mix(in srgb, var(--accent,#a855f7) 60%, transparent); }
-    .fi input {
-      all: unset; width: 100%; height: 100%; padding: 0 12px;
-      color: #fff; font-size: 13px; font-family: inherit; caret-color: var(--accent,#a855f7);
-    }
-    .fi input::placeholder { color: rgba(255,255,255,0.28); }
-    .auth-err { font-size: 11px; color: #f87171; text-align: center; min-height: 14px; }
-    .abtn {
-      height: 38px; border-radius: 9px; border: none; cursor: pointer;
-      font-size: 13px; font-weight: 700; font-family: inherit;
-      background: linear-gradient(135deg, color-mix(in srgb,var(--accent,#a855f7) 80%,#000), var(--accent,#a855f7));
-      color: #fff; transition: opacity .15s;
-    }
-    .abtn:hover { opacity: .85; }
+      /* ── AUTH ─────────────────────────────────── */
+      #auth {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        padding: 18px 16px;
+        height: 100%;
+        justify-content: center;
+      }
+      .auth-title {
+        font-size: 15px;
+        font-weight: 700;
+        text-align: center;
+        margin-bottom: 4px;
+      }
+      .auth-title em {
+        color: var(--accent, #a855f7);
+        font-style: normal;
+      }
+      .tabs {
+        display: flex;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.09);
+        border-radius: 9px;
+        padding: 3px;
+        gap: 3px;
+      }
+      .tabs button {
+        flex: 1;
+        padding: 5px 0;
+        border-radius: 6px;
+        border: none;
+        background: transparent;
+        color: rgba(255, 255, 255, 0.45);
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+      }
+      .tabs button.active {
+        background: color-mix(in srgb, var(--accent, #a855f7) 30%, transparent);
+        color: #fff;
+      }
+      .fi {
+        height: 38px;
+        border-radius: 9px;
+        background: rgba(255, 255, 255, 0.07);
+        border: 1.5px solid rgba(255, 255, 255, 0.1);
+        display: flex;
+        align-items: center;
+        overflow: hidden;
+        transition: border-color 0.18s;
+      }
+      .fi:focus-within {
+        border-color: color-mix(
+          in srgb,
+          var(--accent, #a855f7) 60%,
+          transparent
+        );
+      }
+      .fi input {
+        all: unset;
+        width: 100%;
+        height: 100%;
+        padding: 0 12px;
+        color: #fff;
+        font-size: 13px;
+        font-family: inherit;
+        caret-color: var(--accent, #a855f7);
+      }
+      .fi input::placeholder {
+        color: rgba(255, 255, 255, 0.28);
+      }
+      .auth-err {
+        font-size: 11px;
+        color: #f87171;
+        text-align: center;
+        min-height: 14px;
+      }
+      .abtn {
+        height: 38px;
+        border-radius: 9px;
+        border: none;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 700;
+        font-family: inherit;
+        background: linear-gradient(
+          135deg,
+          color-mix(in srgb, var(--accent, #a855f7) 80%, #000),
+          var(--accent, #a855f7)
+        );
+        color: #fff;
+        transition: opacity 0.15s;
+      }
+      .abtn:hover {
+        opacity: 0.85;
+      }
 
-    /* ── APP SHELL ────────────────────────────── */
-    #app { display: none; width: 100%; height: 100%; flex-direction: column; overflow: hidden; }
+      /* ── APP SHELL ────────────────────────────── */
+      #app {
+        display: none;
+        width: 100%;
+        height: 100%;
+        flex-direction: column;
+        overflow: hidden;
+      }
 
-    /* header */
-    .mc-head {
-      display: flex; align-items: center; gap: 8px;
-      padding: 9px 12px; flex-shrink: 0;
-      background: color-mix(in srgb, var(--navbar,#10041e) 70%, transparent);
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-    }
-    .mc-head-title { flex: 1; font-size: 13px; font-weight: 700; }
-    .mc-head-sub   { font-size: 10px; color: rgba(255,255,255,0.38); }
-    .ib {
-      width: 28px; height: 28px; border-radius: 7px; border: none;
-      background: transparent; color: rgba(255,255,255,0.45);
-      font-size: 13px; cursor: pointer; display: flex;
-      align-items: center; justify-content: center;
-      transition: background .13s, color .13s; font-family: inherit;
-    }
-    .ib:hover { background: color-mix(in srgb,var(--accent,#a855f7) 18%,transparent); color: var(--accent,#c084fc); }
-    .av {
-      border-radius: 50%;
-      background: linear-gradient(135deg, color-mix(in srgb,var(--accent,#a855f7) 70%,#000), var(--accent,#a855f7));
-      display: flex; align-items: center; justify-content: center;
-      font-weight: 700; color: #fff; flex-shrink: 0; text-transform: uppercase;
-      width: 28px; height: 28px; font-size: 11px;
-    }
-    .back-btn {
-      background: none; border: none; color: var(--accent,#a855f7);
-      font-size: 16px; cursor: pointer; padding: 0 4px 0 0; line-height: 1;
-    }
+      /* header */
+      .mc-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 12px;
+        flex-shrink: 0;
+        background: color-mix(in srgb, var(--navbar, #10041e) 70%, transparent);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      }
+      .mc-head-title {
+        flex: 1;
+        font-size: 13px;
+        font-weight: 700;
+      }
+      .mc-head-sub {
+        font-size: 10px;
+        color: rgba(255, 255, 255, 0.38);
+      }
+      .ib {
+        width: 28px;
+        height: 28px;
+        border-radius: 7px;
+        border: none;
+        background: transparent;
+        color: rgba(255, 255, 255, 0.45);
+        font-size: 13px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition:
+          background 0.13s,
+          color 0.13s;
+        font-family: inherit;
+      }
+      .ib:hover {
+        background: color-mix(in srgb, var(--accent, #a855f7) 18%, transparent);
+        color: var(--accent, #c084fc);
+      }
+      .av {
+        border-radius: 50%;
+        background: linear-gradient(
+          135deg,
+          color-mix(in srgb, var(--accent, #a855f7) 70%, #000),
+          var(--accent, #a855f7)
+        );
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        color: #fff;
+        flex-shrink: 0;
+        text-transform: uppercase;
+        width: 28px;
+        height: 28px;
+        font-size: 11px;
+      }
+      .back-btn {
+        background: none;
+        border: none;
+        color: var(--accent, #a855f7);
+        font-size: 16px;
+        cursor: pointer;
+        padding: 0 4px 0 0;
+        line-height: 1;
+      }
 
-    /* ── INBOX VIEW ───────────────────────────── */
-    #view-inbox { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
-    .mc-new {
-      margin: 6px 10px; height: 30px; border-radius: 8px;
-      border: 1.5px dashed color-mix(in srgb,var(--accent,#a855f7) 30%,transparent);
-      background: color-mix(in srgb,var(--accent,#a855f7) 7%,transparent);
-      color: var(--accent,#a855f7); font-size: 11px; font-weight: 600;
-      cursor: pointer; font-family: inherit; flex-shrink: 0;
-      display: flex; align-items: center; justify-content: center; gap: 5px;
-      transition: background .14s;
-    }
-    .mc-new:hover { background: color-mix(in srgb,var(--accent,#a855f7) 14%,transparent); }
-    .mc-list { flex: 1; overflow-y: auto; padding: 4px 6px; }
-    .mc-list::-webkit-scrollbar { width: 3px; }
-    .mc-list::-webkit-scrollbar-thumb { background: color-mix(in srgb,var(--accent,#a855f7) 20%,transparent); border-radius: 99px; }
-    .mc-item {
-      display: flex; align-items: center; gap: 9px;
-      padding: 8px 8px; border-radius: 9px; cursor: pointer;
-      transition: background .12s;
-    }
-    .mc-item:hover { background: rgba(255,255,255,0.05); }
-    .mc-item-body { flex: 1; min-width: 0; }
-    .mc-item-top { display: flex; justify-content: space-between; align-items: baseline; }
-    .mc-item-name { font-size: 12px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .mc-item-time { font-size: 9px; color: rgba(255,255,255,0.3); flex-shrink: 0; margin-left: 4px; }
-    .mc-item-prev { font-size: 11px; color: rgba(255,255,255,0.38); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .mc-badge {
-      min-width: 17px; height: 17px; border-radius: 999px;
-      background: #ef4444; color: #fff; font-size: 9px; font-weight: 700;
-      display: flex; align-items: center; justify-content: center;
-      padding: 0 4px; flex-shrink: 0;
-    }
-    .mc-empty { padding: 28px 14px; text-align: center; font-size: 11px; color: rgba(255,255,255,0.28); line-height: 1.7; }
+      /* ── INBOX VIEW ───────────────────────────── */
+      #view-inbox {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        overflow: hidden;
+      }
+      .mc-new {
+        margin: 6px 10px;
+        height: 30px;
+        border-radius: 8px;
+        border: 1.5px dashed
+          color-mix(in srgb, var(--accent, #a855f7) 30%, transparent);
+        background: color-mix(in srgb, var(--accent, #a855f7) 7%, transparent);
+        color: var(--accent, #a855f7);
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        transition: background 0.14s;
+      }
+      .mc-new:hover {
+        background: color-mix(in srgb, var(--accent, #a855f7) 14%, transparent);
+      }
+      .mc-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 4px 6px;
+      }
+      .mc-list::-webkit-scrollbar {
+        width: 3px;
+      }
+      .mc-list::-webkit-scrollbar-thumb {
+        background: color-mix(in srgb, var(--accent, #a855f7) 20%, transparent);
+        border-radius: 99px;
+      }
+      .mc-item {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 8px 8px;
+        border-radius: 9px;
+        cursor: pointer;
+        transition: background 0.12s;
+      }
+      .mc-item:hover {
+        background: rgba(255, 255, 255, 0.05);
+      }
+      .mc-item-body {
+        flex: 1;
+        min-width: 0;
+      }
+      .mc-item-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+      }
+      .mc-item-name {
+        font-size: 12px;
+        font-weight: 700;
+        color: #fff;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .mc-item-time {
+        font-size: 9px;
+        color: rgba(255, 255, 255, 0.3);
+        flex-shrink: 0;
+        margin-left: 4px;
+      }
+      .mc-item-prev {
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.38);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .mc-badge {
+        min-width: 17px;
+        height: 17px;
+        border-radius: 999px;
+        background: #ef4444;
+        color: #fff;
+        font-size: 9px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 4px;
+        flex-shrink: 0;
+      }
+      .mc-empty {
+        padding: 28px 14px;
+        text-align: center;
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.28);
+        line-height: 1.7;
+      }
 
-    /* ── CHAT VIEW ────────────────────────────── */
-    #view-chat { display: none; flex-direction: column; flex: 1; overflow: hidden; }
-    #mc-msgs {
-      flex: 1; overflow-y: auto; padding: 10px 12px;
-      display: flex; flex-direction: column; gap: 2px;
-    }
-    #mc-msgs::-webkit-scrollbar { width: 3px; }
-    #mc-msgs::-webkit-scrollbar-thumb { background: color-mix(in srgb,var(--accent,#a855f7) 18%,transparent); border-radius: 99px; }
-    .mc-datesep { text-align: center; margin: 8px 0 4px; font-size: 10px; }
-    .mc-datesep span {
-      background: color-mix(in srgb,var(--accent,#a855f7) 12%,transparent);
-      border: 1px solid color-mix(in srgb,var(--accent,#a855f7) 16%,transparent);
-      padding: 2px 10px; border-radius: 99px; color: rgba(255,255,255,0.4);
-    }
-    .mc-msg { display: flex; flex-direction: column; max-width: 78%; animation: msgIn .12s ease; }
-    .mc-msg.mine   { align-self: flex-end; align-items: flex-end; }
-    .mc-msg.theirs { align-self: flex-start; align-items: flex-start; }
-    .mc-msg.theirs + .mc-msg.mine,
-    .mc-msg.mine + .mc-msg.theirs { margin-top: 6px; }
-    .mc-bub {
-      padding: 6px 10px 4px; border-radius: 13px;
-      font-size: 13px; line-height: 1.45; word-break: break-word;
-    }
-    .mc-msg.mine   .mc-bub { background: linear-gradient(135deg,color-mix(in srgb,var(--accent,#a855f7) 70%,#000),color-mix(in srgb,var(--accent,#a855f7) 90%,#000)); color:#fff; border-bottom-right-radius:3px; }
-    .mc-msg.theirs .mc-bub { background: rgba(255,255,255,0.09); color:#e2e8f0; border:1px solid rgba(255,255,255,0.07); border-bottom-left-radius:3px; }
-    .mc-who { font-size: 9px; font-weight: 700; color: var(--accent,#a78bfa); margin-bottom: 1px; }
-    .mc-meta { display: flex; align-items: center; gap: 3px; margin-top: 2px; }
-    .mc-ts { font-size: 9px; color: rgba(255,255,255,0.35); }
-    .mc-msg.mine .mc-ts { color: rgba(255,255,255,0.5); }
-    .mc-tick { font-size: 9px; color: rgba(255,255,255,0.5); }
-    @keyframes msgIn { from { opacity:0; transform:translateY(4px) scale(.97); } to { opacity:1; transform:none; } }
+      /* ── CHAT VIEW ────────────────────────────── */
+      #view-chat {
+        display: none;
+        flex-direction: column;
+        flex: 1;
+        overflow: hidden;
+      }
+      #mc-msgs {
+        flex: 1;
+        overflow-y: auto;
+        padding: 10px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      #mc-msgs::-webkit-scrollbar {
+        width: 3px;
+      }
+      #mc-msgs::-webkit-scrollbar-thumb {
+        background: color-mix(in srgb, var(--accent, #a855f7) 18%, transparent);
+        border-radius: 99px;
+      }
+      .mc-datesep {
+        text-align: center;
+        margin: 8px 0 4px;
+        font-size: 10px;
+      }
+      .mc-datesep span {
+        background: color-mix(in srgb, var(--accent, #a855f7) 12%, transparent);
+        border: 1px solid
+          color-mix(in srgb, var(--accent, #a855f7) 16%, transparent);
+        padding: 2px 10px;
+        border-radius: 99px;
+        color: rgba(255, 255, 255, 0.4);
+      }
+      .mc-msg {
+        display: flex;
+        flex-direction: column;
+        max-width: 78%;
+        animation: msgIn 0.12s ease;
+      }
+      .mc-msg.mine {
+        align-self: flex-end;
+        align-items: flex-end;
+      }
+      .mc-msg.theirs {
+        align-self: flex-start;
+        align-items: flex-start;
+      }
+      .mc-msg.theirs + .mc-msg.mine,
+      .mc-msg.mine + .mc-msg.theirs {
+        margin-top: 6px;
+      }
+      .mc-bub {
+        padding: 6px 10px 4px;
+        border-radius: 13px;
+        font-size: 13px;
+        line-height: 1.45;
+        word-break: break-word;
+      }
+      .mc-msg.mine .mc-bub {
+        background: linear-gradient(
+          135deg,
+          color-mix(in srgb, var(--accent, #a855f7) 70%, #000),
+          color-mix(in srgb, var(--accent, #a855f7) 90%, #000)
+        );
+        color: #fff;
+        border-bottom-right-radius: 3px;
+      }
+      .mc-msg.theirs .mc-bub {
+        background: rgba(255, 255, 255, 0.09);
+        color: #e2e8f0;
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        border-bottom-left-radius: 3px;
+      }
+      .mc-who {
+        font-size: 9px;
+        font-weight: 700;
+        color: var(--accent, #a78bfa);
+        margin-bottom: 1px;
+      }
+      .mc-meta {
+        display: flex;
+        align-items: center;
+        gap: 3px;
+        margin-top: 2px;
+      }
+      .mc-ts {
+        font-size: 9px;
+        color: rgba(255, 255, 255, 0.35);
+      }
+      .mc-msg.mine .mc-ts {
+        color: rgba(255, 255, 255, 0.5);
+      }
+      .mc-tick {
+        font-size: 9px;
+        color: rgba(255, 255, 255, 0.5);
+      }
+      @keyframes msgIn {
+        from {
+          opacity: 0;
+          transform: translateY(4px) scale(0.97);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
 
-    .mc-bar {
-      display: flex; align-items: center; gap: 8px;
-      padding: 7px 10px 9px; flex-shrink: 0;
-      border-top: 1px solid rgba(255,255,255,0.05);
-      background: color-mix(in srgb,var(--navbar,#10041e) 55%,transparent);
-    }
-    .mc-iw {
-      flex: 1; height: 36px; border-radius: 18px;
-      background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.09);
-      display: flex; align-items: center; overflow: hidden; transition: border-color .18s;
-    }
-    .mc-iw:focus-within { border-color: color-mix(in srgb,var(--accent,#a855f7) 45%,transparent); }
-    .mc-iw input {
-      all: unset; width: 100%; height: 100%; padding: 0 12px;
-      color: #fff; font-size: 13px; font-family: inherit; caret-color: var(--accent,#a855f7);
-    }
-    .mc-iw input::placeholder { color: rgba(255,255,255,0.28); }
-    .mc-send {
-      width: 36px; height: 36px; border-radius: 50%; border: none;
-      background: linear-gradient(135deg,color-mix(in srgb,var(--accent,#a855f7) 80%,#000),var(--accent,#a855f7));
-      color: #fff; font-size: 15px; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0; padding: 0; transition: opacity .15s, transform .15s;
-      box-shadow: 0 2px 10px color-mix(in srgb,var(--accent,#a855f7) 38%,transparent);
-    }
-    .mc-send:hover { opacity: .84; transform: scale(1.07); }
+      .mc-bar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 10px 9px;
+        flex-shrink: 0;
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+        background: color-mix(in srgb, var(--navbar, #10041e) 55%, transparent);
+      }
+      .mc-iw {
+        flex: 1;
+        height: 36px;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.07);
+        border: 1px solid rgba(255, 255, 255, 0.09);
+        display: flex;
+        align-items: center;
+        overflow: hidden;
+        transition: border-color 0.18s;
+      }
+      .mc-iw:focus-within {
+        border-color: color-mix(
+          in srgb,
+          var(--accent, #a855f7) 45%,
+          transparent
+        );
+      }
+      .mc-iw input {
+        all: unset;
+        width: 100%;
+        height: 100%;
+        padding: 0 12px;
+        color: #fff;
+        font-size: 13px;
+        font-family: inherit;
+        caret-color: var(--accent, #a855f7);
+      }
+      .mc-iw input::placeholder {
+        color: rgba(255, 255, 255, 0.28);
+      }
+      .mc-send {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: none;
+        background: linear-gradient(
+          135deg,
+          color-mix(in srgb, var(--accent, #a855f7) 80%, #000),
+          var(--accent, #a855f7)
+        );
+        color: #fff;
+        font-size: 15px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        padding: 0;
+        transition:
+          opacity 0.15s,
+          transform 0.15s;
+        box-shadow: 0 2px 10px
+          color-mix(in srgb, var(--accent, #a855f7) 38%, transparent);
+      }
+      .mc-send:hover {
+        opacity: 0.84;
+        transform: scale(1.07);
+      }
 
-    /* ── NEW DM MODAL ─────────────────────────── */
-    .mbg {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.6);
-      display: flex; align-items: center; justify-content: center;
-      z-index: 200; backdrop-filter: blur(6px);
-    }
-    .modal {
-      background: color-mix(in srgb,var(--navbar,#0a0a0a) 95%,transparent);
-      border: 1px solid color-mix(in srgb,var(--accent,#a855f7) 22%,transparent);
-      border-radius: 14px; padding: 18px 16px;
-      width: min(300px,calc(100vw - 24px));
-      display: flex; flex-direction: column; gap: 10px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.8);
-    }
-    .modal h3 { font-size: 14px; font-weight: 700; color: #fff; margin: 0; }
-    .msrch {
-      height: 34px; border-radius: 8px;
-      background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1);
-      overflow: hidden; transition: border-color .18s;
-    }
-    .msrch:focus-within { border-color: color-mix(in srgb,var(--accent,#a855f7) 50%,transparent); }
-    .msrch input {
-      all: unset; width: 100%; height: 100%; padding: 0 12px;
-      color: #fff; font-size: 13px; font-family: inherit;
-    }
-    .msrch input::placeholder { color: rgba(255,255,255,0.28); }
-    .ulist {
-      max-height: 160px; overflow-y: auto;
-      display: flex; flex-direction: column; gap: 2px;
-      border-radius: 8px; background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.06); padding: 4px;
-    }
-    .ulist:empty::after { content:"No users found"; display:block; text-align:center; font-size:11px; padding:12px; color:rgba(255,255,255,0.28); }
-    .uitem {
-      display: flex; align-items: center; gap: 8px;
-      padding: 6px 8px; border-radius: 6px; cursor: pointer;
-      font-size: 12px; font-weight: 600; color: #e2e8f0;
-      transition: background .12s;
-    }
-    .uitem:hover { background: color-mix(in srgb,var(--accent,#a855f7) 20%,transparent); color: var(--accent,#c084fc); }
-    .uav {
-      width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
-      background: linear-gradient(135deg,color-mix(in srgb,var(--accent,#a855f7) 70%,#000),var(--accent,#a855f7));
-      display: flex; align-items: center; justify-content: center;
-      font-size: 9px; font-weight: 700; color: #fff; text-transform: uppercase;
-    }
-    .mbtn {
-      height: 34px; border-radius: 8px; border: none; cursor: pointer;
-      font-size: 12px; font-weight: 700; font-family: inherit;
-      background: linear-gradient(135deg,color-mix(in srgb,var(--accent,#a855f7) 80%,#000),var(--accent,#a855f7));
-      color: #fff; transition: opacity .15s;
-    }
-    .mbtn:hover { opacity: .86; }
-    .mbtn.ghost { background: transparent; border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.6); }
-  </style>
-</head>
-<body>
-
-  <!-- AUTH -->
-  <div id="auth">
-    <div class="auth-title">💬 Aetheris <em>DMs</em></div>
-    <div class="tabs">
-      <button id="tab-login" class="active" onclick="switchtab('login')">Log in</button>
-      <button id="tab-reg" onclick="switchtab('register')">Register</button>
+      /* ── NEW DM MODAL ─────────────────────────── */
+      .mbg {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 200;
+        backdrop-filter: blur(6px);
+      }
+      .modal {
+        background: color-mix(in srgb, var(--navbar, #0a0a0a) 95%, transparent);
+        border: 1px solid
+          color-mix(in srgb, var(--accent, #a855f7) 22%, transparent);
+        border-radius: 14px;
+        padding: 18px 16px;
+        width: min(300px, calc(100vw - 24px));
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+      }
+      .modal h3 {
+        font-size: 14px;
+        font-weight: 700;
+        color: #fff;
+        margin: 0;
+      }
+      .msrch {
+        height: 34px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.07);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        overflow: hidden;
+        transition: border-color 0.18s;
+      }
+      .msrch:focus-within {
+        border-color: color-mix(
+          in srgb,
+          var(--accent, #a855f7) 50%,
+          transparent
+        );
+      }
+      .msrch input {
+        all: unset;
+        width: 100%;
+        height: 100%;
+        padding: 0 12px;
+        color: #fff;
+        font-size: 13px;
+        font-family: inherit;
+      }
+      .msrch input::placeholder {
+        color: rgba(255, 255, 255, 0.28);
+      }
+      .ulist {
+        max-height: 160px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        padding: 4px;
+      }
+      .ulist:empty::after {
+        content: "No users found";
+        display: block;
+        text-align: center;
+        font-size: 11px;
+        padding: 12px;
+        color: rgba(255, 255, 255, 0.28);
+      }
+      .uitem {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 8px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 600;
+        color: #e2e8f0;
+        transition: background 0.12s;
+      }
+      .uitem:hover {
+        background: color-mix(in srgb, var(--accent, #a855f7) 20%, transparent);
+        color: var(--accent, #c084fc);
+      }
+      .uav {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        background: linear-gradient(
+          135deg,
+          color-mix(in srgb, var(--accent, #a855f7) 70%, #000),
+          var(--accent, #a855f7)
+        );
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 9px;
+        font-weight: 700;
+        color: #fff;
+        text-transform: uppercase;
+      }
+      .mbtn {
+        height: 34px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 700;
+        font-family: inherit;
+        background: linear-gradient(
+          135deg,
+          color-mix(in srgb, var(--accent, #a855f7) 80%, #000),
+          var(--accent, #a855f7)
+        );
+        color: #fff;
+        transition: opacity 0.15s;
+      }
+      .mbtn:hover {
+        opacity: 0.86;
+      }
+      .mbtn.ghost {
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.6);
+      }
+    </style>
+    <link rel="stylesheet" href="./css/usability.css?v=20260907.1" />
+  </head>
+  <body>
+    <!-- AUTH -->
+    <div id="auth">
+      <div class="auth-title">💬 Aetheris <em>DMs</em></div>
+      <div class="tabs">
+        <button id="tab-login" class="active" onclick="switchtab('login')">
+          Log in
+        </button>
+        <button id="tab-reg" onclick="switchtab('register')">Register</button>
+      </div>
+      <div class="fi">
+        <input
+          id="f-user"
+          type="text"
+          placeholder="Username"
+          aria-label="Username"
+          maxlength="32"
+          autocomplete="username"
+          autocapitalize="none"
+          spellcheck="false"
+        />
+      </div>
+      <div class="fi">
+        <input
+          id="f-pass"
+          type="password"
+          placeholder="Password"
+          aria-label="Password"
+          maxlength="128"
+          autocomplete="current-password"
+        />
+      </div>
+      <div id="auth-err" class="auth-err"></div>
+      <button class="abtn" id="auth-submit" onclick="submitauth()">
+        Log in
+      </button>
     </div>
-    <div class="fi"><input id="f-user" type="text" placeholder="Username" maxlength="32" autocomplete="off" /></div>
-    <div class="fi"><input id="f-pass" type="password" placeholder="Password" maxlength="128" autocomplete="off" /></div>
-    <div id="auth-err" class="auth-err"></div>
-    <button class="abtn" id="auth-submit" onclick="submitauth()">Log in</button>
-  </div>
 
-  <!-- APP -->
-  <div id="app">
-
-    <!-- INBOX VIEW -->
-    <div id="view-inbox">
-      <div class="mc-head">
-        <span class="mc-head-title">💬 DMs</span>
-        <button class="ib" onclick="logout()" title="Log out">↩</button>
-        <button class="ib" onclick="opennewdm()" title="New message">✏️</button>
-      </div>
-      <button class="mc-new" onclick="opennewdm()">✏️ New message</button>
-      <div class="mc-list" id="mc-list">
-        <div class="mc-empty">no convos yet.<br>start one above!</div>
-      </div>
-    </div>
-
-    <!-- CHAT VIEW -->
-    <div id="view-chat">
-      <div class="mc-head">
-        <button class="back-btn" onclick="showinbox()">‹</button>
-        <div class="av" id="chat-av">?</div>
-        <div class="mc-head-title" id="chat-name">—</div>
-      </div>
-      <div id="mc-msgs"></div>
-      <div class="mc-bar">
-        <div class="mc-iw">
-          <input id="mc-inp" type="text" placeholder="message..." autocomplete="off" />
+    <!-- APP -->
+    <div id="app">
+      <!-- INBOX VIEW -->
+      <div id="view-inbox">
+        <div class="mc-head">
+          <span class="mc-head-title">💬 DMs</span>
+          <button class="ib" onclick="logout()" title="Log out">↩</button>
+          <button class="ib" onclick="opennewdm()" title="New message">
+            ✏️
+          </button>
         </div>
-        <button class="mc-send" onclick="senddm()">➤</button>
+        <button class="mc-new" onclick="opennewdm()">✏️ New message</button>
+        <div class="mc-list" id="mc-list">
+          <div class="mc-empty">no convos yet.<br />start one above!</div>
+        </div>
+      </div>
+
+      <!-- CHAT VIEW -->
+      <div id="view-chat">
+        <div class="mc-head">
+          <button class="back-btn" onclick="showinbox()">‹</button>
+          <div class="av" id="chat-av">?</div>
+          <div class="mc-head-title" id="chat-name">—</div>
+        </div>
+        <div id="mc-msgs"></div>
+        <div class="mc-bar">
+          <div class="mc-iw">
+            <input
+              id="mc-inp"
+              type="text"
+              maxlength="3000"
+              aria-label="Message"
+              placeholder="message..."
+              autocomplete="off"
+            />
+          </div>
+          <button class="mc-send" onclick="senddm()">➤</button>
+        </div>
       </div>
     </div>
 
-  </div>
-
-  <!-- NEW DM MODAL -->
-  <div id="modal-newdm" class="mbg" style="display:none;" onclick="if(event.target===this)closemodal('modal-newdm')">
-    <div class="modal">
-      <h3>New message</h3>
-      <div class="msrch"><input id="user-search" type="text" placeholder="search users..." autocomplete="off" /></div>
-      <div class="ulist" id="user-list"></div>
-      <button class="mbtn ghost" onclick="closemodal('modal-newdm')">cancel</button>
+    <!-- NEW DM MODAL -->
+    <div
+      id="modal-newdm"
+      class="mbg"
+      style="display: none"
+      onclick="if (event.target === this) closemodal('modal-newdm');"
+    >
+      <div class="modal">
+        <h3>New message</h3>
+        <div class="msrch">
+          <input
+            id="user-search"
+            type="text"
+            placeholder="search users..."
+            autocomplete="off"
+          />
+        </div>
+        <div class="ulist" id="user-list"></div>
+        <button class="mbtn ghost" onclick="closemodal('modal-newdm')">
+          cancel
+        </button>
+      </div>
     </div>
-  </div>
 
-  <script src="./js/dm-shared.js"></script>
-  <script>
-    // page-specific mini-chat UI — shared auth/session/api helpers live in
-    // dm-shared.js: autologin/authtoken/myusername, savetoken, cleartoken,
-    // getdeviceid, ini, esc, timeago, switchtab, submitauth.
-    var activeconvo = null, polltimer = null, inboxtimer = null;
-    var activedisplay = null;
-    var inboxcache = [], lastmsgtime = 0, lastdatelabel = "";
-    var POLL_MS = 2500;
+    <script src="./js/dm-shared.js?v=20260907.1"></script>
+    <script>
+      // page-specific mini-chat UI — shared auth/session/api helpers live in
+      // dm-shared.js: autologin/authtoken/myusername, savetoken, cleartoken,
+      // getdeviceid, ini, esc, timeago, switchtab, submitauth.
+      var activeconvo = null,
+        polltimer = null,
+        inboxtimer = null;
+      var activedisplay = null;
+      var inboxcache = [],
+        lastmsgtime = 0,
+        lastdatelabel = "";
+      var POLL_MS = 2500;
+      var conversationVersion = 0,
+        messagesLoadingFor = "",
+        sending = false;
+      var drafts = Object.create(null);
 
-    function showapp() {
-      document.getElementById("auth").style.display = "none";
-      document.getElementById("app").style.display = "flex";
-      loadinbox();
-      inboxtimer = setInterval(loadinbox, 6000);
-    }
+      function showapp() {
+        document.getElementById("auth").style.display = "none";
+        document.getElementById("app").style.display = "flex";
+        loadinbox();
+        clearInterval(inboxtimer);
+        inboxtimer = setInterval(loadinbox, 6000);
+      }
 
-    function showauth() {
-      document.getElementById("app").style.display = "none";
-      document.getElementById("auth").style.display = "flex";
-      clearInterval(polltimer); clearInterval(inboxtimer);
-      polltimer = inboxtimer = null; activeconvo = null; activedisplay = null;
-    }
+      function showauth() {
+        conversationVersion++;
+        drafts = Object.create(null);
+        document.getElementById("app").style.display = "none";
+        document.getElementById("auth").style.display = "flex";
+        clearInterval(polltimer);
+        clearInterval(inboxtimer);
+        polltimer = inboxtimer = null;
+        activeconvo = null;
+        activedisplay = null;
+      }
 
-    async function logout() {
-      try { await fetch("/api/accounts/logout", { method:"POST", headers:{"Authorization":"Bearer "+authtoken} }); } catch(_) {}
-      cleartoken(); myusername = ""; localStorage.removeItem("dmUsername"); showauth();
-    }
+      async function logout() {
+        try {
+          await fetch("/api/accounts/logout", {
+            method: "POST",
+            headers: { Authorization: "Bearer " + authtoken },
+          });
+        } catch (_) {}
+        cleartoken();
+        myusername = "";
+        localStorage.removeItem("dmUsername");
+        showauth();
+      }
 
-    (async function() {
-      if (!authtoken) return;
-      try {
-        var r = await fetch("/api/accounts/me", { headers: { "Authorization": "Bearer " + authtoken } });
-        var d = await r.json();
-        if (d.ok) { myusername = d.username; localStorage.setItem("dmUsername", myusername); showapp(); }
-        else { cleartoken(); localStorage.removeItem("dmUsername"); myusername = ""; }
-      } catch(_) {}
-    })();
-
-    async function loadinbox() {
-      try {
-        var r = await fetch("/api/dm-inbox", { headers: { "Authorization": "Bearer " + authtoken } });
-        var d = await r.json();
-        if (!d.ok) return;
-        inboxcache = d.conversations;
-        renderinbox(inboxcache);
-      } catch(_) {}
-    }
-
-    function renderinbox(cs) {
-      var el = document.getElementById("mc-list");
-      el.innerHTML = "";
-      if (!cs.length) { el.innerHTML = '<div class="mc-empty">no convos yet.<br>start one above!</div>'; notifybadge(0); return; }
-      var totalunread = 0;
-      cs.forEach(function(c) {
-        var isactive = c.with.toLowerCase() === activeconvo;
-        var unread = isactive ? 0 : (c.unread || 0);
-        if (!isactive) totalunread += unread;
-        var it = document.createElement("div");
-        it.className = "mc-item";
-        var badge = unread > 0 ? '<span class="mc-badge">' + (unread > 99 ? "99+" : unread) + '</span>' : "";
-        it.innerHTML = '<div class="av">' + ini(c.with) + '</div>'
-          + '<div class="mc-item-body"><div class="mc-item-top"><span class="mc-item-name">' + esc(c.with) + '</span>'
-          + '<span class="mc-item-time">' + timeago(c.lastTime) + '</span></div>'
-          + '<div class="mc-item-prev">' + esc(c.lastMessage) + '</div></div>' + badge;
-        it.addEventListener("click", function() { openconvo(c.with.toLowerCase(), c.with); });
-        el.appendChild(it);
-      });
-      notifybadge(totalunread);
-    }
-
-    function notifybadge(count) {
-      try { window.parent.postMessage({ type: "chat-unread", count: count }, location.origin); } catch(_) {}
-    }
-
-    // views
-    function showinbox() {
-      document.getElementById("view-chat").style.display = "none";
-      document.getElementById("view-inbox").style.display = "flex";
-      clearInterval(polltimer); polltimer = null; activeconvo = null; activedisplay = null;
-      loadinbox();
-    }
-
-    function openchatview() {
-      document.getElementById("view-inbox").style.display = "none";
-      var vc = document.getElementById("view-chat");
-      vc.style.display = "flex";
-    }
-
-    function openconvo(u, display) {
-      activeconvo = u; activedisplay = display || u;
-      lastmsgtime = 0; lastdatelabel = "";
-      document.getElementById("chat-name").textContent = activedisplay;
-      document.getElementById("chat-av").textContent = ini(activedisplay);
-      document.getElementById("mc-msgs").innerHTML = "";
-      openchatview();
-      clearInterval(polltimer); loadmsgs(); polltimer = setInterval(loadmsgs, POLL_MS);
-      setTimeout(function() { document.getElementById("mc-inp").focus(); }, 50);
-      fetch("/api/dm-inbox/read/" + encodeURIComponent(u), { method: "POST", headers: { "Authorization": "Bearer " + authtoken } }).catch(function() {});
-    }
-
-    async function loadmsgs() {
-      if (!activeconvo) return;
-      try {
-        var r = await fetch("/api/dm/" + encodeURIComponent(activeconvo) + "?after=" + lastmsgtime, { headers: { "Authorization": "Bearer " + authtoken } });
-        var msgs = await r.json();
-        if (!Array.isArray(msgs) || !msgs.length) return;
-        var box = document.getElementById("mc-msgs");
-        var atbottom = box.scrollHeight - box.scrollTop <= box.clientHeight + 80;
-        msgs.forEach(function(m) {
-          var dl = new Date(m.time).toLocaleDateString([], { month: "long", day: "numeric" });
-          if (dl !== lastdatelabel) {
-            var s = document.createElement("div");
-            s.className = "mc-datesep";
-            s.innerHTML = "<span>" + dl + "</span>";
-            box.appendChild(s);
-            lastdatelabel = dl;
+      (async function () {
+        if (!authtoken) return;
+        try {
+          var r = await fetch("/api/accounts/me", {
+            headers: { Authorization: "Bearer " + authtoken },
+          });
+          var d = await r.json();
+          if (d.ok) {
+            myusername = d.username;
+            localStorage.setItem("dmUsername", myusername);
+            showapp();
+          } else {
+            cleartoken();
+            localStorage.removeItem("dmUsername");
+            myusername = "";
           }
-          box.appendChild(makemsgel(m));
-        });
-        lastmsgtime = msgs[msgs.length - 1].time;
-        if (atbottom) box.scrollTop = box.scrollHeight;
-      } catch(_) {}
-    }
+        } catch (_) {}
+      })();
 
-    function makemsgel(msg) {
-      var mine = msg.from.toLowerCase() === myusername.toLowerCase();
-      var w = document.createElement("div");
-      w.className = "mc-msg " + (mine ? "mine" : "theirs");
-      var ts = new Date(msg.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-      w.innerHTML = (!mine ? '<div class="mc-who">' + esc(msg.from) + '</div>' : "")
-        + '<div class="mc-bub">' + esc(msg.message) + '</div>'
-        + '<div class="mc-meta"><span class="mc-ts">' + ts + '</span>'
-        + (mine ? '<span class="mc-tick">✓✓</span>' : "") + '</div>';
-      return w;
-    }
+      async function loadinbox() {
+        if (!authtoken || document.hidden) return;
+        var token = authtoken;
+        try {
+          var r = await fetch("/api/dm-inbox", {
+            headers: { Authorization: "Bearer " + authtoken },
+          });
+          var d = await r.json();
+          if (token !== authtoken) return;
+          if (r.status === 401) {
+            cleartoken();
+            showauth();
+            return;
+          }
+          if (!d.ok) return;
+          inboxcache = d.conversations;
+          renderinbox(inboxcache);
+        } catch (_) {}
+      }
 
-    async function senddm() {
-      if (!activeconvo) return;
-      var inp = document.getElementById("mc-inp");
-      var text = inp.value.trim();
-      if (!text) return;
-      inp.value = "";
-      try {
-        var r = await fetch("/api/dm/" + encodeURIComponent(activeconvo), { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + authtoken }, body: JSON.stringify({ message: text }) });
-        if (!r.ok) {
-          inp.value = text;
-          var d = await r.json().catch(function() { return {}; });
-          alert(d.error || "couldn't send that message.");
+      function renderinbox(cs) {
+        var el = document.getElementById("mc-list");
+        el.innerHTML = "";
+        if (!cs.length) {
+          el.innerHTML =
+            '<div class="mc-empty">no convos yet.<br>start one above!</div>';
+          notifybadge(0);
           return;
         }
-      } catch(_) {
-        inp.value = text;
-        alert("network error — message not sent.");
-        return;
-      }
-      loadmsgs();
-      loadinbox();
-    }
-    document.getElementById("mc-inp").addEventListener("keydown", function(e) { if (e.key === "Enter") senddm(); });
-
-    var searchtimer = null;
-
-    function opennewdm() {
-      document.getElementById("user-search").value = "";
-      document.getElementById("user-list").innerHTML = "";
-      document.getElementById("modal-newdm").style.display = "flex";
-      setTimeout(function() { document.getElementById("user-search").focus(); }, 60);
-    }
-
-    function closemodal(id) { document.getElementById(id).style.display = "none"; }
-
-    async function searchusers(q) {
-      if (q.length < 2) { document.getElementById("user-list").innerHTML = ""; return; }
-      try {
-        var r = await fetch("/api/accounts/search?q=" + encodeURIComponent(q), { headers: { "Authorization": "Bearer " + authtoken } });
-        var d = await r.json();
-        if (!d.ok) return;
-        var box = document.getElementById("user-list");
-        box.innerHTML = "";
-        d.users.forEach(function(u) {
-          var el = document.createElement("div");
-          el.className = "uitem";
-          el.innerHTML = '<div class="uav">' + ini(u) + '</div>' + esc(u);
-          el.addEventListener("click", function() { closemodal("modal-newdm"); openconvo(u.toLowerCase(), u); loadinbox(); });
-          box.appendChild(el);
+        var totalunread = 0;
+        cs.forEach(function (c) {
+          var isactive = c.with.toLowerCase() === activeconvo;
+          var unread = isactive ? 0 : c.unread || 0;
+          if (!isactive) totalunread += unread;
+          var it = document.createElement("div");
+          it.className = "mc-item";
+          var badge =
+            unread > 0
+              ? '<span class="mc-badge">' +
+                (unread > 99 ? "99+" : unread) +
+                "</span>"
+              : "";
+          it.innerHTML =
+            '<div class="av">' +
+            ini(c.with) +
+            "</div>" +
+            '<div class="mc-item-body"><div class="mc-item-top"><span class="mc-item-name">' +
+            esc(c.with) +
+            "</span>" +
+            '<span class="mc-item-time">' +
+            timeago(c.lastTime) +
+            "</span></div>" +
+            '<div class="mc-item-prev">' +
+            esc(c.lastMessage) +
+            "</div></div>" +
+            badge;
+          it.addEventListener("click", function () {
+            openconvo(c.with.toLowerCase(), c.with);
+          });
+          el.appendChild(it);
         });
-      } catch(_) {}
-    }
+        notifybadge(totalunread);
+      }
 
-    document.getElementById("user-search").addEventListener("input", function() {
-      var self = this;
-      clearTimeout(searchtimer);
-      searchtimer = setTimeout(function() { searchusers(self.value.trim()); }, 200);
-    });
-    document.getElementById("user-search").addEventListener("keydown", function(e) { if (e.key === "Escape") closemodal("modal-newdm"); });
-  </script>
-</body>
+      function notifybadge(count) {
+        try {
+          window.parent.postMessage(
+            { type: "chat-unread", count: count },
+            location.origin,
+          );
+        } catch (_) {}
+      }
+
+      // views
+      function showinbox() {
+        if (activeconvo)
+          drafts[activeconvo] = document.getElementById("mc-inp").value;
+        conversationVersion++;
+        document.getElementById("view-chat").style.display = "none";
+        document.getElementById("view-inbox").style.display = "flex";
+        clearInterval(polltimer);
+        polltimer = null;
+        activeconvo = null;
+        activedisplay = null;
+        loadinbox();
+      }
+
+      function openchatview() {
+        document.getElementById("view-inbox").style.display = "none";
+        var vc = document.getElementById("view-chat");
+        vc.style.display = "flex";
+      }
+
+      function openconvo(u, display) {
+        if (activeconvo)
+          drafts[activeconvo] = document.getElementById("mc-inp").value;
+        conversationVersion++;
+        document.getElementById("mc-inp").value = drafts[u] || "";
+        activeconvo = u;
+        activedisplay = display || u;
+        lastmsgtime = 0;
+        lastdatelabel = "";
+        document.getElementById("chat-name").textContent = activedisplay;
+        document.getElementById("chat-av").textContent = ini(activedisplay);
+        document.getElementById("mc-msgs").innerHTML = "";
+        openchatview();
+        clearInterval(polltimer);
+        loadmsgs();
+        polltimer = setInterval(loadmsgs, POLL_MS);
+        if (!matchMedia("(pointer: coarse)").matches)
+          document.getElementById("mc-inp").focus();
+      }
+
+      async function loadmsgs() {
+        if (!activeconvo || document.hidden) return;
+        var convo = activeconvo,
+          version = conversationVersion,
+          token = authtoken;
+        var requestKey = convo + ":" + version;
+        if (messagesLoadingFor === requestKey) return;
+        messagesLoadingFor = requestKey;
+        try {
+          var r = await fetch(
+            "/api/dm/" +
+              encodeURIComponent(activeconvo) +
+              "?after=" +
+              lastmsgtime,
+            { headers: { Authorization: "Bearer " + authtoken } },
+          );
+          var msgs = await r.json();
+          if (
+            convo !== activeconvo ||
+            version !== conversationVersion ||
+            token !== authtoken
+          )
+            return;
+          if (r.status === 401) {
+            cleartoken();
+            showauth();
+            return;
+          }
+          if (!Array.isArray(msgs) || !msgs.length) return;
+          msgs = msgs.filter(function (msg) {
+            return msg.time > lastmsgtime;
+          });
+          if (!msgs.length) return;
+          var box = document.getElementById("mc-msgs");
+          var atbottom =
+            box.scrollHeight - box.scrollTop <= box.clientHeight + 80;
+          msgs.forEach(function (m) {
+            var dl = new Date(m.time).toLocaleDateString([], {
+              month: "long",
+              day: "numeric",
+            });
+            if (dl !== lastdatelabel) {
+              var s = document.createElement("div");
+              s.className = "mc-datesep";
+              s.innerHTML = "<span>" + dl + "</span>";
+              box.appendChild(s);
+              lastdatelabel = dl;
+            }
+            box.appendChild(makemsgel(m));
+          });
+          lastmsgtime = msgs[msgs.length - 1].time;
+          fetch("/api/dm-inbox/read/" + encodeURIComponent(convo), {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: "Bearer " + token,
+            },
+            body: JSON.stringify({ through: lastmsgtime }),
+          }).catch(function () {});
+          if (atbottom) box.scrollTop = box.scrollHeight;
+        } catch (_) {
+        } finally {
+          if (messagesLoadingFor === requestKey) messagesLoadingFor = "";
+        }
+      }
+
+      function makemsgel(msg) {
+        var mine = msg.from.toLowerCase() === myusername.toLowerCase();
+        var w = document.createElement("div");
+        w.className = "mc-msg " + (mine ? "mine" : "theirs");
+        var ts = new Date(msg.time).toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+        w.innerHTML =
+          (!mine ? '<div class="mc-who">' + esc(msg.from) + "</div>" : "") +
+          '<div class="mc-bub">' +
+          esc(msg.message) +
+          "</div>" +
+          '<div class="mc-meta"><span class="mc-ts">' +
+          ts +
+          "</span>" +
+          (mine ? '<span class="mc-tick" title="Sent">✓</span>' : "") +
+          "</div>";
+        return w;
+      }
+
+      async function senddm() {
+        if (!activeconvo || sending) return;
+        var recipient = activeconvo,
+          token = authtoken;
+        var inp = document.getElementById("mc-inp");
+        var text = inp.value.trim();
+        if (!text) return;
+        sending = true;
+        inp.disabled = true;
+        inp.value = "";
+        var controller = new AbortController(),
+          timeout = setTimeout(function () {
+            controller.abort();
+          }, 15000);
+        try {
+          var r = await fetch("/api/dm/" + encodeURIComponent(recipient), {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: "Bearer " + token,
+            },
+            body: JSON.stringify({ message: text }),
+            signal: controller.signal,
+          });
+          if (token !== authtoken) return;
+          if (!r.ok) {
+            // put the message back so it isn't silently lost
+            drafts[recipient] = text;
+            if (activeconvo === recipient) inp.value = text;
+            var d = await r.json().catch(function () {
+              return {};
+            });
+            if (token !== authtoken) return;
+            alert(d.error || "couldn't send that message.");
+            return;
+          }
+        } catch (_) {
+          if (token !== authtoken) return;
+          drafts[recipient] = text;
+          if (activeconvo === recipient) inp.value = text;
+          alert("network error — message not sent.");
+          return;
+        } finally {
+          clearTimeout(timeout);
+          sending = false;
+          inp.disabled = false;
+        }
+        delete drafts[recipient];
+        loadmsgs();
+        loadinbox();
+      }
+      document
+        .getElementById("mc-inp")
+        .addEventListener("keydown", function (e) {
+          if (e.key === "Enter" && !e.isComposing) senddm();
+        });
+
+      var searchtimer = null;
+
+      function opennewdm() {
+        document.getElementById("user-search").value = "";
+        document.getElementById("user-list").innerHTML = "";
+        document.getElementById("modal-newdm").style.display = "flex";
+        setTimeout(function () {
+          document.getElementById("user-search").focus();
+        }, 60);
+      }
+
+      function closemodal(id) {
+        document.getElementById(id).style.display = "none";
+      }
+
+      async function searchusers(q) {
+        if (q.length < 2) {
+          document.getElementById("user-list").innerHTML = "";
+          return;
+        }
+        var token = authtoken;
+        try {
+          var r = await fetch(
+            "/api/accounts/search?q=" + encodeURIComponent(q),
+            { headers: { Authorization: "Bearer " + authtoken } },
+          );
+          var d = await r.json();
+          if (
+            token !== authtoken ||
+            document.getElementById("user-search").value.trim() !== q ||
+            !d.ok
+          )
+            return;
+          var box = document.getElementById("user-list");
+          box.innerHTML = "";
+          (Array.isArray(d.users) ? d.users : []).forEach(function (u) {
+            var el = document.createElement("div");
+            el.className = "uitem";
+            el.innerHTML = '<div class="uav">' + ini(u) + "</div>" + esc(u);
+            el.addEventListener("click", function () {
+              closemodal("modal-newdm");
+              openconvo(u.toLowerCase(), u);
+              loadinbox();
+            });
+            box.appendChild(el);
+          });
+        } catch (_) {}
+      }
+
+      document
+        .getElementById("user-search")
+        .addEventListener("input", function () {
+          var self = this;
+          clearTimeout(searchtimer);
+          searchtimer = setTimeout(function () {
+            searchusers(self.value.trim());
+          }, 200);
+        });
+      document
+        .getElementById("user-search")
+        .addEventListener("keydown", function (e) {
+          if (e.key === "Escape") closemodal("modal-newdm");
+        });
+    </script>
+  </body>
 </html>

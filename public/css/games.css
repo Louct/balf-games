@@ -88,17 +88,10 @@ html.in-iframe .tag-bar {
   min-width: 0;
   height: 48px;
   border-radius: 18px;
-  background:
-    linear-gradient(180deg, var(--games-search-start), var(--games-search-end)),
-    linear-gradient(90deg, color-mix(in srgb, var(--games-accent) 22%, transparent), transparent 42%, color-mix(in srgb, var(--games-accent-strong) 16%, transparent));
+  background: rgba(255, 255, 255, 0.045);
   border: 1px solid color-mix(in srgb, var(--games-search-stroke) 88%, rgba(255,255,255,0.04));
-  box-shadow:
-    0 14px 34px var(--games-shadow),
-    inset 0 1px 0 rgba(255,255,255,0.05),
-    inset 0 0 0 1px rgba(255,255,255,0.02);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
   overflow: hidden;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
 }
 
 #search-box {
@@ -122,7 +115,6 @@ html.in-iframe .tag-bar {
 .games-search-wrap:focus-within {
   border-color: color-mix(in srgb, var(--games-accent-strong) 58%, rgba(255,255,255,0.16));
   box-shadow:
-    0 16px 36px var(--games-shadow),
     0 0 0 1px rgba(255,255,255,0.04),
     0 0 0 4px var(--games-focus-ring);
 }
@@ -513,9 +505,9 @@ body[theme="dark-blue"] #source-filter optgroup {
 #game-popup {
   position: fixed;
   top: max(12px, env(safe-area-inset-top, 12px));
-  right: 12px;
-  max-width: 420px;
-  width: calc(100% - 24px);
+  right: max(12px, env(safe-area-inset-right, 12px));
+  box-sizing: border-box;
+  width: min(360px, calc(100vw - 24px));
   background: rgba(20, 20, 22, 0.92);
   backdrop-filter: blur(8px) saturate(180%);
   -webkit-backdrop-filter: blur(8px) saturate(180%);

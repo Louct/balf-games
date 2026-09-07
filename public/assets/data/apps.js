@@ -8,22 +8,27 @@ function freshappurl(url) {
 }
 
 async function loadappsdata() {
+  var timer;
   try {
     var controller = new AbortController();
-    var timer = setTimeout(function() { controller.abort(); }, 5000);
+    timer = setTimeout(function () {
+      controller.abort();
+    }, 8000);
     var res = await fetch(freshappurl("assets/data/apps.json"), {
       cache: "no-store",
       headers: { "Cache-Control": "no-cache" },
-      signal: controller.signal
+      signal: controller.signal,
     });
-    clearTimeout(timer);
     if (!res.ok) throw new Error("HTTP " + res.status);
     var data = await res.json();
     if (Array.isArray(data)) {
       window.apps = data;
     }
   } catch (e) {
+    window.appsLoadError = true;
     console.error("Failed to load apps data:", e);
+  } finally {
+    clearTimeout(timer);
   }
 
   window.appsloaded = true;

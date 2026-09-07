@@ -1,320 +1,203 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-
-<head>
-    <link rel="shortcut icon" href="./assets/images/icon.png" type="image/png" />
+  <head>
+    <meta charset="utf-8" />
+    <script src="./js/site.js?v=20260907.1"></script>
+    <link
+      rel="shortcut icon"
+      href="./assets/images/icon.png"
+      type="image/png"
+    />
     <title>Aetheris</title>
 
     <script>
-        // detect if we're inside the parent shell's iframe (index.html → #main-frame)
-        // set a class on <html> early so css in-iframe overrides apply on the first frame
-        try {
-            if (window.self !== window.top) {
-                document.documentElement.classList.add('in-iframe');
-            }
-        } catch (_) {
-            document.documentElement.classList.add('in-iframe');
+      // detect if we're inside the parent shell's iframe (index.html → #main-frame)
+      // set a class on <html> early so css in-iframe overrides apply on the first frame
+      try {
+        if (window.self !== window.top) {
+          document.documentElement.classList.add("in-iframe");
         }
+      } catch (_) {
+        document.documentElement.classList.add("in-iframe");
+      }
     </script>
 
-    <link rel="stylesheet" href="./css/main.css?v=3" />
-    <link rel="stylesheet" href="./css/themes.css?v=3" />
-    <link rel="stylesheet" href="./css/nav.css?v=3" />
-    <link rel="stylesheet" href="./css/games.css" />
-    <link rel="stylesheet" href="./css/cards.css?v=4" />
-    <script src="./js/theme.js?v=2"></script>
-<script defer src="./js/preload.js"></script>
-    <script defer src="./assets/data/games.js?v=2"></script>
-    <script defer src="./js/games.js?v=4"></script>
+    <link rel="stylesheet" href="./css/main.css?v=20260907.1" />
+    <link rel="stylesheet" href="./css/themes.css?v=20260907.1" />
+    <link rel="stylesheet" href="./css/nav.css?v=20260907.1" />
+    <link rel="stylesheet" href="./css/games.css?v=20260907.2" />
+    <link rel="stylesheet" href="./css/cards.css?v=20260907.1" />
+    <script src="./js/theme.js?v=20260907.1"></script>
+    <script defer src="./js/preload.js?v=20260907.1"></script>
+    <script defer src="./assets/data/games.js?v=20260907.1"></script>
+    <script defer src="./js/games.js?v=20260907.1"></script>
 
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-</head>
+    <link rel="stylesheet" href="./css/usability.css?v=20260907.1" />
+  </head>
 
-<body>
+  <body>
     <div id="game-popup">
-        <div id="game-popup-header">
-            <span>💜 Game errors or glitches?</span>
-            <div class="close-btn" onclick="closegamepopup()">✕</div>
-        </div>
+      <div id="game-popup-header">
+        <span>💜 Game errors or glitches?</span>
+        <button
+          type="button"
+          class="close-btn"
+          aria-label="Dismiss game tips"
+          onclick="closegamepopup()"
+        >
+          ✕
+        </button>
+      </div>
 
-        <div id="game-popup-content">
-            Click the <strong>fullscreen icon</strong> on the right — this opens it on the entire screen. Also try refreshing the page and turning on performance mode if you are lagging.
-        </div>
-        <div id="game-popup-footer">
-            <label id="dont-show-label">
-                <input type="checkbox" id="dont-show-again" /> Don't show again
-            </label>
-        </div>
+      <div id="game-popup-content">
+        Click the <strong>fullscreen icon</strong> on the right — this opens it
+        on the entire screen. Also try refreshing the page and turning on
+        performance mode if you are lagging.
+      </div>
+      <div id="game-popup-footer">
+        <label id="dont-show-label">
+          <input type="checkbox" id="dont-show-again" /> Don't show again
+        </label>
+      </div>
     </div>
     <div class="games-shell">
-        <div class="page-wrapper">
-            <h1>Games</h1>
+      <div class="page-wrapper">
+        <h1>Games</h1>
 
-            <div class="games-topbar">
-                <div class="games-search-wrap">
-                    <input type="text" id="search-box" placeholder="Search games..." autocomplete="off" />
-                    <span class="search-focus-ring" aria-hidden="true"></span>
-                </div>
+        <div class="games-topbar">
+          <div class="games-search-wrap">
+            <input
+              type="search"
+              id="search-box"
+              aria-label="Search games"
+              placeholder="Search games..."
+              autocomplete="off"
+            />
+            <span class="search-focus-ring" aria-hidden="true"></span>
+          </div>
 
-                <div style="display:flex;gap:8px;align-items:center;">
-                <button class="random-game-btn" id="random-game-btn" type="button" aria-label="Open a random game" title="Open a random game">
-                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <polyline points="16 3 21 3 21 8"></polyline>
-                        <line x1="4" y1="20" x2="21" y2="3"></line>
-                        <polyline points="21 16 21 21 16 21"></polyline>
-                        <line x1="15" y1="15" x2="21" y2="21"></line>
-                    </svg>
-                    Random
-                </button>
-                <button class="sort-plays-btn" id="sort-plays-btn" type="button" aria-label="Sort by most played" title="Sort by most played">
-                    <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" stroke="none" aria-hidden="true">
-                        <path d="M12 2C9.5 5.5 7 8.5 7 12a5 5 0 0 0 10 0c0-2.2-1.2-4.3-2.8-5.8-.3 1.2-.8 2.3-1.7 3.3C12.2 8 12 5 12 2z"/>
-                    </svg>
-                    Most Played
-                </button>
-                <div style="position:relative;">
-                    <button class="icon-btn" id="filter-toggle" type="button" aria-label="Open filters" aria-expanded="false">
-                        <svg viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="M4 6h16"></path>
-                            <path d="M7 12h10"></path>
-                            <path d="M10 18h4"></path>
-                        </svg>
-                    </button>
+          <div style="display: flex; gap: 8px; align-items: center">
+            <button
+              class="random-game-btn"
+              id="random-game-btn"
+              type="button"
+              aria-label="Open a random game"
+              title="Open a random game"
+              disabled
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="15"
+                height="15"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <polyline points="16 3 21 3 21 8"></polyline>
+                <line x1="4" y1="20" x2="21" y2="3"></line>
+                <polyline points="21 16 21 21 16 21"></polyline>
+                <line x1="15" y1="15" x2="21" y2="21"></line>
+              </svg>
+              Random
+            </button>
+            <button
+              class="sort-plays-btn"
+              id="sort-plays-btn"
+              type="button"
+              aria-label="Sort by most played"
+              aria-pressed="false"
+              title="Sort by most played"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="15"
+                height="15"
+                fill="currentColor"
+                stroke="none"
+                aria-hidden="true"
+              >
+                <path
+                  d="M12 2C9.5 5.5 7 8.5 7 12a5 5 0 0 0 10 0c0-2.2-1.2-4.3-2.8-5.8-.3 1.2-.8 2.3-1.7 3.3C12.2 8 12 5 12 2z"
+                />
+              </svg>
+              Most Played
+            </button>
+            <div style="position: relative">
+              <button
+                class="icon-btn"
+                id="filter-toggle"
+                type="button"
+                aria-label="Open filters"
+                aria-expanded="false"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M4 6h16"></path>
+                  <path d="M7 12h10"></path>
+                  <path d="M10 18h4"></path>
+                </svg>
+              </button>
 
-                    <div class="filters-popover" id="filters-popover">
-                        <label for="source-filter">Source</label>
-                        <div class="select-wrap">
-                            <select id="source-filter">
-                                <option value="aetheris" selected>Aetheris</option>
-                                <option value="velara">Velara</option>
-                                <option value="petezah">Petezah</option>
-                                <option value="truffled">Truffled</option>
-                                <option value="gnmath">Gn-Math</option>
-                                <option value="igroutka">Igroutka</option>
-                            </select>
-                        </div>
-                    </div>
+              <div class="filters-popover" id="filters-popover">
+                <label for="source-filter">Source</label>
+                <div class="select-wrap">
+                  <select id="source-filter">
+                    <option value="aetheris" selected>Aetheris</option>
+                    <option value="velara">Velara</option>
+                    <option value="petezah">Petezah</option>
+                    <option value="truffled">Truffled</option>
+                    <option value="gnmath">Gn-Math</option>
+                    <option value="igroutka">Igroutka</option>
+                    <option value="all">All sources</option>
+                  </select>
                 </div>
-                </div>
+              </div>
             </div>
-
-            <!-- TAGS SECTION - Added under search bar -->
-            <div class="tag-bar">
-                <div class="tag-group" id="tag-container">
-                    <!-- Tags will appear here -->
-                    <span style="color: rgba(255,255,255,0.5); font-size: 13px;">Loading tags...</span>
-                </div>
-                <div style="display: flex; justify-content: flex-end;">
-                    <button class="clear-tags-btn" id="clear-all-tags-btn" style="display: none;">✖ Clear tags</button>
-                </div>
-            </div>
-
-            <div class="section-label" id="popular-label" style="display:none;">🔥 Popular</div>
-            <div class="card-container" id="populargames"></div>
-            <div class="section-label" id="favorites-label" style="display:none;">Favorites</div>
-            <div class="card-container" id="favoritedgames"></div>
-            <div class="card-container" id="gamecards"></div>
+          </div>
         </div>
+
+        <!-- TAGS SECTION - Added under search bar -->
+        <div class="tag-bar">
+          <div class="tag-group" id="tag-container">
+            <!-- Tags will appear here -->
+            <span style="color: rgba(255, 255, 255, 0.5); font-size: 13px"
+              >Loading tags...</span
+            >
+          </div>
+          <div style="display: flex; justify-content: flex-end">
+            <button
+              class="clear-tags-btn"
+              id="clear-all-tags-btn"
+              style="display: none"
+            >
+              ✖ Clear tags
+            </button>
+          </div>
+        </div>
+
+        <div class="section-label" id="popular-label" style="display: none">
+          🔥 Popular
+        </div>
+        <div class="card-container" id="populargames"></div>
+        <div class="section-label" id="favorites-label" style="display: none">
+          Favorites
+        </div>
+        <div class="card-container" id="favoritedgames"></div>
+        <div class="card-container" id="gamecards"></div>
+        <p id="games-status" class="library-status" role="status">
+          Loading games…
+        </p>
+        <button id="games-more" type="button" class="library-more" hidden>
+          Show more games
+        </button>
+        <button id="games-retry" type="button" class="library-more" hidden>
+          Retry loading catalog
+        </button>
+      </div>
     </div>
-
-    <script>
-        function infertagsforgame(game) {
-          if (!game || !game.title) return [];
-          if (game.tags && Array.isArray(game.tags) && game.tags.length > 0) return game.tags;
-          return [];
-        }
-
-        function collectalltags(gamesarray) {
-          var alltags = new Set();
-          gamesarray.forEach(function(game) {
-            infertagsforgame(game).forEach(function(t) { alltags.add(t); });
-          });
-          return Array.from(alltags).sort(function(a, b) { return a.localeCompare(b); });
-        }
-
-        // games.js reads window.__activeTags for the unified filter
-        var activetags = new Set();
-        window.__activeTags = activetags;
-
-        // delegate all filtering to the unified function in games.js
-        function applytagfilter() {
-          if (typeof window.__applyFilters === "function") window.__applyFilters();
-        }
-
-        function updatetagbuttons(tagslist, activeset) {
-          var container = document.getElementById("tag-container");
-          if (!container) return;
-          container.innerHTML = "";
-          if (tagslist.length === 0) {
-            container.innerHTML = '<span style="color: rgba(255,255,255,0.5); font-size: 13px;">No tags available</span>';
-            return;
-          }
-          tagslist.forEach(function(tag) {
-            var btn = document.createElement("button");
-            btn.className = "tag-chip";
-            if (activeset.has(tag)) btn.classList.add("active");
-            btn.textContent = tag;
-            btn.addEventListener("click", function() {
-              if (activeset.has(tag)) activeset.delete(tag);
-              else activeset.add(tag);
-              updatetagbuttons(tagslist, activeset);
-              applytagfilter();
-            });
-            container.appendChild(btn);
-          });
-          var clearbtn = document.getElementById("clear-all-tags-btn");
-          if (clearbtn) clearbtn.style.display = activeset.size > 0 ? "inline-block" : "none";
-        }
-
-        function clearalltags() {
-          activetags.clear();
-          var games = window.games || [];
-          updatetagbuttons(collectalltags(games), activetags);
-          applytagfilter();
-        }
-
-        function inittagsystem() {
-          var games = window.games;
-          if (games && games.length) {
-            updatetagbuttons(collectalltags(games), activetags);
-            // source-filter + search changes are wired by games.js
-            // (setsearchandfilter) — the old second listener here used to run
-            // the whole grid filter pass twice per change
-            applytagfilter();
-          } else {
-            setTimeout(inittagsystem, 500);
-          }
-        }
-
-        // theme is applied by theme.js in head
-
-        function refreshfavoriteslabel() {
-          var wrap  = document.getElementById('favoritedgames');
-          var label = document.getElementById('favorites-label');
-          if (!wrap || !label) return;
-          label.style.display = wrap.children.length > 0 ? 'block' : 'none';
-        }
-
-        function setupfilterpopover() {
-          var toggle  = document.getElementById('filter-toggle');
-          var popover = document.getElementById('filters-popover');
-          if (!toggle || !popover) return;
-
-          toggle.addEventListener('click', function() {
-            var open = popover.classList.toggle('open');
-            toggle.setAttribute('aria-expanded', String(open));
-          });
-
-          document.addEventListener('click', function(event) {
-            if (!popover.classList.contains('open')) return;
-            if (popover.contains(event.target) || toggle.contains(event.target)) return;
-            popover.classList.remove('open');
-            toggle.setAttribute('aria-expanded', 'false');
-          });
-
-          var sourcefilter = document.getElementById('source-filter');
-          if (sourcefilter) {
-            sourcefilter.addEventListener('change', function() {
-              popover.classList.remove('open');
-              toggle.setAttribute('aria-expanded', 'false');
-            });
-          }
-        }
-
-        window.addEventListener('load', function() {
-          setupfilterpopover();
-          var clearbtn = document.getElementById('clear-all-tags-btn');
-          if (clearbtn) clearbtn.addEventListener('click', clearalltags);
-          document.addEventListener('gamesrendered', function() {
-            inittagsystem();
-            refreshfavoriteslabel();
-          }, { once: true });
-        });
-
-        var gridobserver = new MutationObserver(function() {
-          refreshfavoriteslabel();
-        });
-
-        window.addEventListener('DOMContentLoaded', function() {
-          var games     = document.getElementById('gamecards');
-          var favorites = document.getElementById('favoritedgames');
-          var popular   = document.getElementById('populargames');
-          if (games)     gridobserver.observe(games,     { childList: true, subtree: true });
-          if (favorites) gridobserver.observe(favorites, { childList: true, subtree: true });
-          if (popular)   gridobserver.observe(popular,   { childList: true, subtree: true });
-        });
-
-        window.addEventListener("load", function() {
-          var randombtn = document.getElementById("random-game-btn");
-          if (!randombtn) return;
-          randombtn.addEventListener("click", function() {
-            // skip #populargames — dupes of main grid cards would bias the pick
-            var cards = Array.from(document.querySelectorAll(
-              "#gamecards .card-item, #favoritedgames .card-item"
-            )).filter(function(c) { return c.style.display !== "none" && c.offsetParent !== null; });
-            if (!cards.length) return;
-            cards[Math.floor(Math.random() * cards.length)].click();
-          });
-        });
-
-        var sortbyplaysactive = false;
-        var playscache = null;
-
-        async function fetchplaycounts() {
-          if (playscache) return playscache;
-          try {
-            var res = await fetch("/api/plays/counts");
-            if (!res.ok) throw new Error("fetch failed");
-            playscache = await res.json();
-          } catch(e) {
-            playscache = {};
-          }
-          return playscache;
-        }
-
-        async function applysortbyplays() {
-          var playmap = await fetchplaycounts();
-          ["gamecards", "favoritedgames", "populargames"].forEach(function(containerid) {
-            var container = document.getElementById(containerid);
-            if (!container) return;
-            var cards = Array.from(container.children);
-            cards.sort(function(a, b) { return (playmap[String(b.dataset.id)] || 0) - (playmap[String(a.dataset.id)] || 0); });
-            var frag = document.createDocumentFragment();
-            cards.forEach(function(card) { frag.appendChild(card); });
-            container.appendChild(frag);
-          });
-        }
-
-        window.addEventListener("load", function() {
-          var sortbtn = document.getElementById("sort-plays-btn");
-          if (!sortbtn) return;
-          sortbtn.addEventListener("click", async function() {
-            sortbyplaysactive = !sortbyplaysactive;
-            sortbtn.classList.toggle("sort-active", sortbyplaysactive);
-            if (sortbyplaysactive) {
-              await applysortbyplays();
-            } else {
-              playscache = null;
-              if (typeof buildgamecards === "function") buildgamecards();
-            }
-          });
-        });
-
-        function closegamepopup() {
-          var popup    = document.getElementById('game-popup');
-          var dontshow = document.getElementById('dont-show-again');
-          if (popup) popup.classList.remove('show');
-          if (dontshow && dontshow.checked) localStorage.setItem('popupDismissed', '1');
-          else sessionStorage.setItem('popupDismissed', '1');
-        }
-
-        window.addEventListener('load', function() {
-          if (sessionStorage.getItem('popupDismissed') || localStorage.getItem('popupDismissed')) return;
-          var popup = document.getElementById('game-popup');
-          if (popup) setTimeout(function() { popup.classList.add('show'); }, 800);
-        });
-    </script>
-</body>
-
+  </body>
 </html>

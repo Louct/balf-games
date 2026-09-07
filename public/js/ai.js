@@ -1,7 +1,15 @@
 (function () {
   "use strict";
 
-  var $ = function (id) { return document.getElementById(id); };
+  var $ = function (id) {
+    return document.getElementById(id);
+  };
+  function apiHeaders() {
+    var headers = { "Content-Type": "application/json" };
+    var token = Aetheris.getToken();
+    if (token) headers.Authorization = "Bearer " + token;
+    return headers;
+  }
 
   var convos = [];
   var attachments = [];
@@ -43,7 +51,11 @@
   var errImgEl = $("ai-err-img");
 
   var providers = [
-    { name: "OpenAI", mark: "O", pattern: /^(gpt|chatgpt|o[134](?:-|$)|dall-e|text-)/i },
+    {
+      name: "OpenAI",
+      mark: "O",
+      pattern: /^(gpt|chatgpt|o[134](?:-|$)|dall-e|text-)/i,
+    },
     { name: "Anthropic", mark: "A", pattern: /claude|fable(?:-|\s*)5/i },
     { name: "Google", mark: "G", pattern: /gemini|gemma/i },
     { name: "Qwen", mark: "Q", pattern: /qwen/i },
@@ -71,22 +83,40 @@
   }
 
   function normalizeModels(list) {
-    return list.map(function (item) {
-      var id = String((item && item.id) || item || "");
-      var provider = providerFor(id, item && (item.owned_by || item.provider));
-      return { id: id, provider: provider.name, mark: provider.mark };
-    }).filter(function (item) { return item.id; }).sort(function (a, b) {
-      var providerOrderA = providers.findIndex(function (p) { return p.name === a.provider; });
-      var providerOrderB = providers.findIndex(function (p) { return p.name === b.provider; });
-      if (providerOrderA < 0) providerOrderA = providers.length;
-      if (providerOrderB < 0) providerOrderB = providers.length;
-      if (providerOrderA !== providerOrderB) return providerOrderA - providerOrderB;
-      return a.id.localeCompare(b.id, undefined, { numeric: true, sensitivity: "base" });
-    });
+    return list
+      .map(function (item) {
+        var id = String((item && item.id) || item || "");
+        var provider = providerFor(
+          id,
+          item && (item.owned_by || item.provider),
+        );
+        return { id: id, provider: provider.name, mark: provider.mark };
+      })
+      .filter(function (item) {
+        return item.id;
+      })
+      .sort(function (a, b) {
+        var providerOrderA = providers.findIndex(function (p) {
+          return p.name === a.provider;
+        });
+        var providerOrderB = providers.findIndex(function (p) {
+          return p.name === b.provider;
+        });
+        if (providerOrderA < 0) providerOrderA = providers.length;
+        if (providerOrderB < 0) providerOrderB = providers.length;
+        if (providerOrderA !== providerOrderB)
+          return providerOrderA - providerOrderB;
+        return a.id.localeCompare(b.id, undefined, {
+          numeric: true,
+          sensitivity: "base",
+        });
+      });
   }
 
   function isImageModel(id) {
-    return /image|img|dall|flux|sdxl|sd3(?:-|$)|banana|krea|recraft|ideogram|mai-image/i.test(id);
+    return /image|img|dall|flux|sdxl|sd3(?:-|$)|banana|krea|recraft|ideogram|mai-image/i.test(
+      id,
+    );
   }
 
   function makeProviderIcon(model) {
@@ -110,7 +140,11 @@
   }
 
   function findModel(models, id) {
-    return models.find(function (model) { return model.id === id; }) || models[0];
+    return (
+      models.find(function (model) {
+        return model.id === id;
+      }) || models[0]
+    );
   }
 
   function updateTrigger(trigger, model) {
@@ -149,9 +183,15 @@
     var models = isChat ? chatModels : imageModels;
     var selected = isChat ? modelEl.value : imgModelEl.value;
     var container = isChat ? modelList : imgModelList;
-    var search = String(query || "").trim().toLowerCase();
+    var search = String(query || "")
+      .trim()
+      .toLowerCase();
     var filtered = models.filter(function (model) {
-      return !search || model.id.toLowerCase().indexOf(search) >= 0 || model.provider.toLowerCase().indexOf(search) >= 0;
+      return (
+        !search ||
+        model.id.toLowerCase().indexOf(search) >= 0 ||
+        model.provider.toLowerCase().indexOf(search) >= 0
+      );
     });
     container.innerHTML = "";
 
@@ -174,7 +214,8 @@
       }
       var option = document.createElement("button");
       option.type = "button";
-      option.className = "ai-model-option" + (model.id === selected ? " selected" : "");
+      option.className =
+        "ai-model-option" + (model.id === selected ? " selected" : "");
       option.setAttribute("data-model-value", model.id);
       option.setAttribute("data-model-kind", kind);
       option.appendChild(makeProviderIcon(model));
@@ -221,13 +262,20 @@
 
   function applyModels(list) {
     var normalized = normalizeModels(list);
-    chatModels = normalized.filter(function (model) { return !isImageModel(model.id) && !/video/i.test(model.id); });
-    imageModels = normalized.filter(function (model) { return isImageModel(model.id) && !/video/i.test(model.id); });
-    if (!chatModels.length) chatModels = normalizeModels([{ id: defaultModel }]);
-    if (!imageModels.length) imageModels = normalizeModels([{ id: defaultImgModel }]);
+    chatModels = normalized.filter(function (model) {
+      return !isImageModel(model.id) && !/video/i.test(model.id);
+    });
+    imageModels = normalized.filter(function (model) {
+      return isImageModel(model.id) && !/video/i.test(model.id);
+    });
+    if (!chatModels.length)
+      chatModels = normalizeModels([{ id: defaultModel }]);
+    if (!imageModels.length)
+      imageModels = normalizeModels([{ id: defaultImgModel }]);
 
     var selectedChat = findModel(chatModels, defaultModel) || chatModels[0];
-    var selectedImage = findModel(imageModels, defaultImgModel) || imageModels[0];
+    var selectedImage =
+      findModel(imageModels, defaultImgModel) || imageModels[0];
     buildNativeSelect(modelEl, chatModels, selectedChat.id);
     buildNativeSelect(imgModelEl, imageModels, selectedImage.id);
     updateTrigger(modelTrigger, selectedChat);
@@ -239,15 +287,25 @@
   function loadModels() {
     applyModels([{ id: defaultModel }, { id: defaultImgModel }]);
     fetch("/api/ai/models")
-      .then(function (response) { return response.json(); })
+      .then(function (response) {
+        return response.json();
+      })
       .then(function (data) {
-        if (!data || !data.ok) throw new Error("bad models response");
+        if (!data || !data.ok)
+          throw new Error((data && data.error) || "Could not load AI models.");
+        if (data.default_model) defaultModel = data.default_model;
+        if (data.default_image_model)
+          defaultImgModel = data.default_image_model;
         applyModels(data.data || []);
       })
-      .catch(function () {});
+      .catch(function (error) {
+        setErr(error.message);
+      });
   }
 
   function addMsg(role, text, images) {
+    var empty = msgsEl.querySelector(".ai-empty");
+    if (empty) empty.remove();
     var wrap = document.createElement("div");
     wrap.className = "ai-msg " + (role === "user" ? "user" : "assistant");
     var head = document.createElement("div");
@@ -278,7 +336,8 @@
     var wrap = document.createElement("div");
     wrap.className = "ai-msg assistant";
     wrap.id = "ai-typing";
-    wrap.innerHTML = '<div class="ai-msg-head">aetheris ai</div><div class="ai-typing"><span></span><span></span><span></span></div>';
+    wrap.innerHTML =
+      '<div class="ai-msg-head">aetheris ai</div><div class="ai-typing"><span></span><span></span><span></span></div>';
     msgsEl.appendChild(wrap);
     scrollBottom();
     return wrap;
@@ -312,6 +371,8 @@
     imgModelEl.disabled = busy;
     imgModelTrigger.disabled = busy;
     imgPrompt.disabled = busy;
+    $("ai-clear").disabled = busy;
+    $("ai-clear-mobile").disabled = busy;
     syncActionButtons();
     if (busy) closeModelMenus();
   }
@@ -361,7 +422,12 @@
       var name = document.createElement("strong");
       name.textContent = attachment.name;
       var size = document.createElement("small");
-      size.textContent = "Reference " + (index + 1) + " · " + (attachment.size / 1024 / 1024).toFixed(1) + " MB";
+      size.textContent =
+        "Reference " +
+        (index + 1) +
+        " · " +
+        (attachment.size / 1024 / 1024).toFixed(1) +
+        " MB";
       copy.appendChild(name);
       copy.appendChild(size);
       var remove = document.createElement("button");
@@ -382,9 +448,16 @@
     return new Promise(function (resolve, reject) {
       var reader = new FileReader();
       reader.onload = function () {
-        resolve({ name: file.name, size: file.size, type: file.type, dataUrl: reader.result });
+        resolve({
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          dataUrl: reader.result,
+        });
       };
-      reader.onerror = function () { reject(new Error("Could not read " + file.name + ".")); };
+      reader.onerror = function () {
+        reject(new Error("Could not read " + file.name + "."));
+      };
       reader.readAsDataURL(file);
     });
   }
@@ -400,16 +473,19 @@
     for (var i = 0; i < incoming.length; i++) {
       if (!/^image\/(png|jpeg|webp|gif)$/.test(incoming[i].type)) {
         setErr("Use a PNG, JPG, WebP or GIF image.", "chat");
+        fileInput.value = "";
         return;
       }
       if (incoming[i].size > maxFileBytes) {
         setErr(incoming[i].name + " is larger than 4 MB.", "chat");
+        fileInput.value = "";
         return;
       }
     }
     try {
       var loaded = await Promise.all(incoming.map(readFile));
-      attachments = attachments.concat(loaded);
+      if (busying) return;
+      attachments = attachments.concat(loaded).slice(0, maxAttachments);
       setErr("", "chat");
       renderAttachments();
     } catch (error) {
@@ -427,7 +503,14 @@
       return;
     }
     if (incoming.length > room) {
-      setErr("Only the first " + room + " image" + (room === 1 ? "" : "s") + " were added.", "image");
+      setErr(
+        "Only the first " +
+          room +
+          " image" +
+          (room === 1 ? "" : "s") +
+          " were added.",
+        "image",
+      );
     }
     incoming = incoming.slice(0, room);
     for (var i = 0; i < incoming.length; i++) {
@@ -444,7 +527,10 @@
     }
     try {
       var loaded = await Promise.all(incoming.map(readFile));
-      imageAttachments = imageAttachments.concat(loaded);
+      if (busying) return;
+      imageAttachments = imageAttachments
+        .concat(loaded)
+        .slice(0, maxImageAttachments);
       setErr("", "image");
       renderImageAttachments();
     } catch (error) {
@@ -463,7 +549,10 @@
       messageContent = [];
       if (text) messageContent.push({ type: "text", text: text });
       pendingAttachments.forEach(function (attachment) {
-        messageContent.push({ type: "image_url", image_url: { url: attachment.dataUrl } });
+        messageContent.push({
+          type: "image_url",
+          image_url: { url: attachment.dataUrl },
+        });
       });
     }
 
@@ -474,51 +563,109 @@
     setErr("", "chat");
 
     convos.push({ role: "user", content: messageContent });
-    addMsg("user", text || (pendingAttachments.length === 1 ? "Attached an image" : "Attached " + pendingAttachments.length + " images"), pendingAttachments);
+    var userBubble = addMsg(
+      "user",
+      text ||
+        (pendingAttachments.length === 1
+          ? "Attached an image"
+          : "Attached " + pendingAttachments.length + " images"),
+      pendingAttachments,
+    );
     setBusy(true);
     var typing = addTyping();
     var model = modelEl.value || defaultModel;
+    var controller = new AbortController();
+    var timeout = setTimeout(function () {
+      controller.abort();
+    }, 310000);
+    var bubble = null;
 
     try {
       var response = await fetch("/api/ai/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: apiHeaders(),
         body: JSON.stringify({ model: model, messages: convos, stream: true }),
+        signal: controller.signal,
       });
       if (!response.ok) {
-        var errorData = await response.json().catch(function () { return {}; });
-        throw new Error(errorData.error || "Request failed (" + response.status + ").");
+        var errorData = await response.json().catch(function () {
+          return {};
+        });
+        throw new Error(
+          errorData.error || "Request failed (" + response.status + ").",
+        );
       }
 
       var answer = "";
-      var bubble = null;
-      var reader = response.body.getReader();
-      var decoder = new TextDecoder();
-      var buffer = "";
-      for (;;) {
-        var result = await reader.read();
-        if (result.done) break;
-        buffer += decoder.decode(result.value, { stream: true });
-        var lines = buffer.split("\n");
-        buffer = lines.pop();
-        for (var i = 0; i < lines.length; i++) {
-          var line = lines[i].trim();
-          if (line.indexOf("data:") !== 0) continue;
-          var data = line.slice(5).trim();
-          if (data === "[DONE]") continue;
-          var json;
-          try { json = JSON.parse(data); } catch (_error) { continue; }
-          var delta = (json.choices && json.choices[0] && json.choices[0].delta && json.choices[0].delta.content) || "";
-          if (!delta) continue;
-          if (!bubble) {
-            if (typing.parentNode) typing.parentNode.removeChild(typing);
-            bubble = addMsg("assistant", "");
+      function receiveLine(line) {
+        line = line.trim();
+        if (line.indexOf("data:") !== 0) return;
+        var data = line.slice(5).trim();
+        if (data === "[DONE]") return;
+        var json;
+        try {
+          json = JSON.parse(data);
+        } catch (_) {
+          return;
+        }
+        if (json.error)
+          throw new Error(json.error.message || String(json.error));
+        var delta =
+          (json.choices &&
+            json.choices[0] &&
+            json.choices[0].delta &&
+            json.choices[0].delta.content) ||
+          "";
+        if (typeof delta !== "string" || !delta) return;
+        if (!bubble) {
+          typing.remove();
+          bubble = addMsg("assistant", "");
+        }
+        var atBottom =
+          msgsEl.scrollHeight - msgsEl.scrollTop <= msgsEl.clientHeight + 100;
+        answer += delta;
+        bubble.textContent = answer;
+        if (atBottom) scrollBottom();
+      }
+      if (
+        (response.headers.get("content-type") || "").includes(
+          "application/json",
+        )
+      ) {
+        var full = await response.json();
+        if (full.error)
+          throw new Error(full.error.message || String(full.error));
+        answer =
+          (full.choices &&
+            full.choices[0] &&
+            full.choices[0].message &&
+            full.choices[0].message.content) ||
+          "";
+        if (typeof answer !== "string")
+          throw new Error("The AI returned an unsupported response.");
+      } else {
+        if (!response.body)
+          throw new Error("This browser could not read the AI stream.");
+        var reader = response.body.getReader();
+        var decoder = new TextDecoder();
+        var buffer = "";
+        for (;;) {
+          var result = await reader.read();
+          if (result.done) {
+            buffer += decoder.decode();
+            if (buffer.trim()) receiveLine(buffer);
+            break;
           }
-          answer += delta;
-          bubble.textContent = answer;
-          scrollBottom();
+          buffer += decoder.decode(result.value, { stream: true });
+          var lines = buffer.split("\n");
+          buffer = lines.pop();
+          for (var i = 0; i < lines.length; i++) {
+            receiveLine(lines[i]);
+          }
         }
       }
+      if (!answer)
+        throw new Error("No response returned. Your draft has been restored.");
       if (!bubble) {
         if (typing.parentNode) typing.parentNode.removeChild(typing);
         bubble = addMsg("assistant", answer || "No response returned.");
@@ -527,28 +674,39 @@
     } catch (error) {
       if (typing.parentNode) typing.parentNode.removeChild(typing);
       convos.pop();
+      if (userBubble.parentNode) userBubble.parentNode.remove();
+      if (bubble && bubble.parentNode) bubble.parentNode.remove();
+      chatInp.value = text;
+      resizeInput(chatInp);
       attachments = pendingAttachments;
       renderAttachments();
-      setErr(error && error.message ? error.message : "Something went wrong. Try again.", "chat");
+      setErr(
+        error && error.message
+          ? error.message
+          : "Something went wrong. Try again.",
+        "chat",
+      );
     } finally {
+      clearTimeout(timeout);
       setBusy(false);
     }
   }
 
   function clearChat() {
+    if (busying) return;
     convos = [];
     attachments = [];
     renderAttachments();
     msgsEl.innerHTML =
       '<div class="ai-empty">' +
       '<span class="ai-eyebrow">A blank page, ready</span>' +
-      '<h1>What are we<br>making today?</h1>' +
-      '<p>Think through an idea, analyze an image, or get a direct answer. Start anywhere.</p>' +
+      "<h1>What are we<br>making today?</h1>" +
+      "<p>Think through an idea, analyze an image, or get a direct answer. Start anywhere.</p>" +
       '<div class="ai-prompt-grid">' +
       '<button type="button" data-chat-prompt="Help me turn a rough idea into a clear plan"><span>01</span><strong>Shape an idea</strong><small>Turn a thought into a clear plan</small></button>' +
       '<button type="button" data-chat-prompt="Help me understand what is happening in this image"><span>02</span><strong>Analyze an image</strong><small>Attach a photo or screenshot</small></button>' +
       '<button type="button" data-chat-prompt="Explain a difficult topic in plain language"><span>03</span><strong>Learn something</strong><small>Make a hard topic feel simple</small></button>' +
-      '</div></div>';
+      "</div></div>";
     setErr("");
     chatInp.value = "";
     resizeInput(chatInp);
@@ -566,23 +724,39 @@
     try {
       var response = await fetch("/api/ai/images", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: apiHeaders(),
         body: JSON.stringify({
           prompt: prompt,
           model: selectedImageModel,
-          images: imageAttachments.map(function (attachment) { return attachment.dataUrl; }),
+          images: imageAttachments.map(function (attachment) {
+            return attachment.dataUrl;
+          }),
         }),
       });
-      var data = await response.json().catch(function () { return {}; });
-      if (!response.ok) throw new Error(data.error || "Image request failed (" + response.status + ").");
-      var images = data.data || [];
+      var data = await response.json().catch(function () {
+        return {};
+      });
+      if (!response.ok)
+        throw new Error(
+          data.error || "Image request failed (" + response.status + ").",
+        );
+      var images = (Array.isArray(data.data) ? data.data : []).filter(
+        function (image) {
+          return image && (image.b64_json || Aetheris.httpUrl(image.url));
+        },
+      );
       if (!images.length) throw new Error("No images returned.");
       imgGrid.innerHTML = "";
       images.forEach(function (image) {
         var card = document.createElement("div");
         card.className = "ai-img-card";
         var element = document.createElement("img");
-        element.src = image.b64_json ? "data:" + (image.mime_type || "image/png") + ";base64," + image.b64_json : image.url;
+        element.src = image.b64_json
+          ? "data:" +
+            (image.mime_type || "image/png") +
+            ";base64," +
+            image.b64_json
+          : image.url;
         element.alt = prompt;
         element.referrerPolicy = "no-referrer";
         var caption = document.createElement("div");
@@ -593,10 +767,14 @@
         imgGrid.appendChild(card);
       });
     } catch (error) {
-      setErr(error && error.message ? error.message : "Image generation failed.", "image");
+      setErr(
+        error && error.message ? error.message : "Image generation failed.",
+        "image",
+      );
     } finally {
       setBusy(false);
       app.classList.remove("loading-img");
+      imgEmpty.style.display = imgGrid.children.length ? "none" : "";
     }
   }
 
@@ -604,11 +782,16 @@
     closeModelMenus();
     app.classList.toggle("mode-chat", mode === "chat");
     app.classList.toggle("mode-img", mode === "img");
-    $("ai-section-kicker").textContent = mode === "chat" ? "Conversation" : "Create";
-    $("ai-section-title").textContent = mode === "chat" ? "New thread" : "Image studio";
+    $("ai-section-kicker").textContent =
+      mode === "chat" ? "Conversation" : "Create";
+    $("ai-section-title").textContent =
+      mode === "chat" ? "New thread" : "Image studio";
     var tabs = document.querySelectorAll(".ai-tab");
     for (var i = 0; i < tabs.length; i++) {
-      tabs[i].classList.toggle("active", tabs[i].getAttribute("data-mode") === mode);
+      tabs[i].classList.toggle(
+        "active",
+        tabs[i].getAttribute("data-mode") === mode,
+      );
     }
   }
 
@@ -617,9 +800,15 @@
     element.style.height = Math.min(element.scrollHeight, 140) + "px";
   }
 
-  modelTrigger.addEventListener("click", function () { openModelMenu("chat"); });
-  imgModelTrigger.addEventListener("click", function () { openModelMenu("image"); });
-  modelSearch.addEventListener("input", function () { renderModelList("chat", modelSearch.value); });
+  modelTrigger.addEventListener("click", function () {
+    openModelMenu("chat");
+  });
+  imgModelTrigger.addEventListener("click", function () {
+    openModelMenu("image");
+  });
+  modelSearch.addEventListener("input", function () {
+    renderModelList("chat", modelSearch.value);
+  });
   modelList.addEventListener("click", function (event) {
     var option = event.target.closest("[data-model-value]");
     if (option) selectModel("chat", option.getAttribute("data-model-value"));
@@ -635,20 +824,36 @@
     if (event.key === "Escape") closeModelMenus();
   });
 
-  attachButton.addEventListener("click", function () { fileInput.click(); });
-  fileInput.addEventListener("change", function () { addFiles(fileInput.files); });
+  attachButton.addEventListener("click", function () {
+    fileInput.click();
+  });
+  fileInput.addEventListener("change", function () {
+    addFiles(fileInput.files);
+  });
   attachmentsEl.addEventListener("click", function (event) {
+    if (busying) return;
     var remove = event.target.closest("[data-remove-attachment]");
     if (!remove) return;
-    attachments.splice(Number(remove.getAttribute("data-remove-attachment")), 1);
+    attachments.splice(
+      Number(remove.getAttribute("data-remove-attachment")),
+      1,
+    );
     renderAttachments();
   });
-  imgAttachButton.addEventListener("click", function () { imgFileInput.click(); });
-  imgFileInput.addEventListener("change", function () { addImageReferenceFiles(imgFileInput.files); });
+  imgAttachButton.addEventListener("click", function () {
+    imgFileInput.click();
+  });
+  imgFileInput.addEventListener("change", function () {
+    addImageReferenceFiles(imgFileInput.files);
+  });
   imgAttachmentsEl.addEventListener("click", function (event) {
+    if (busying) return;
     var remove = event.target.closest("[data-remove-image-attachment]");
     if (!remove) return;
-    imageAttachments.splice(Number(remove.getAttribute("data-remove-image-attachment")), 1);
+    imageAttachments.splice(
+      Number(remove.getAttribute("data-remove-image-attachment")),
+      1,
+    );
     renderImageAttachments();
   });
 
@@ -658,7 +863,7 @@
     syncActionButtons();
   });
   chatInp.addEventListener("keydown", function (event) {
-    if (event.key === "Enter" && !event.shiftKey) {
+    if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
       event.preventDefault();
       sendChat();
     }
@@ -674,14 +879,16 @@
     chatInp.focus();
   });
 
-  document.querySelector(".ai-image-starters").addEventListener("click", function (event) {
-    var starter = event.target.closest("[data-image-prompt]");
-    if (!starter) return;
-    imgPrompt.value = starter.getAttribute("data-image-prompt");
-    resizeInput(imgPrompt);
-    syncActionButtons();
-    imgPrompt.focus();
-  });
+  document
+    .querySelector(".ai-image-starters")
+    .addEventListener("click", function (event) {
+      var starter = event.target.closest("[data-image-prompt]");
+      if (!starter) return;
+      imgPrompt.value = starter.getAttribute("data-image-prompt");
+      resizeInput(imgPrompt);
+      syncActionButtons();
+      imgPrompt.focus();
+    });
   imgForm.addEventListener("submit", function (event) {
     event.preventDefault();
     genImages();
@@ -691,7 +898,7 @@
     syncActionButtons();
   });
   imgPrompt.addEventListener("keydown", function (event) {
-    if (event.key === "Enter" && !event.shiftKey) {
+    if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
       event.preventDefault();
       genImages();
     }
@@ -707,7 +914,9 @@
 
   var tabs = document.querySelectorAll(".ai-tab");
   for (var i = 0; i < tabs.length; i++) {
-    tabs[i].addEventListener("click", function () { setMode(this.getAttribute("data-mode")); });
+    tabs[i].addEventListener("click", function () {
+      setMode(this.getAttribute("data-mode"));
+    });
   }
 
   clearChat();

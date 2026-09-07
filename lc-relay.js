@@ -57,7 +57,8 @@ class Room {
 }
 
 function writeUInt64LE(buf, offset, value) {
-  for (let i = 0; i < 8; i++) buf[offset + i] = Number((BigInt(value) >> BigInt(i * 8)) & 0xffn);
+  for (let i = 0; i < 8; i++)
+    buf[offset + i] = Number((BigInt(value) >> BigInt(i * 8)) & 0xffn);
 }
 
 function readUInt64LE(buf, offset) {
@@ -68,6 +69,10 @@ function readUInt64LE(buf, offset) {
 
 function send(ws, frame) {
   if (ws && ws.readyState === WebSocket.OPEN) {
+    if (ws.bufferedAmount > 4 * MAX_FRAME_BYTES) {
+      ws.terminate();
+      return;
+    }
     try {
       ws.send(frame);
     } catch {
@@ -146,7 +151,9 @@ function handleMemberLeave(ws) {
   const id = ws.wireId;
   if (id != null && room.members.delete(id)) {
     sendPeerLeave(room.host, id);
-    console.log(`[lc-relay] room ${room.code}: member ${id} left (${room.memberCount()} member(s) remaining)`);
+    console.log(
+      `[lc-relay] room ${room.code}: member ${id} left (${room.memberCount()} member(s) remaining)`,
+    );
   }
 }
 
@@ -188,7 +195,9 @@ function handleFrame(ws, frame) {
         target.room = null;
         dropClient(target, "Kicked by the host.");
         sendPeerLeave(room.host, targetId);
-        console.log(`[lc-relay] room ${room.code}: member ${targetId} kicked by host`);
+        console.log(
+          `[lc-relay] room ${room.code}: member ${targetId} kicked by host`,
+        );
       }
       break;
     }
@@ -214,7 +223,19 @@ function handleJoin(ws, frame) {
   }
   const code = frame.subarray(3, 3 + roomLen).toString("utf8");
   const verLen = frame[3 + roomLen];
-  const version = frame.subarray(4 + roomLen, 4 + roomLen + verLen).toString("utf8");
+  if (
+    (role !== 0 && role !== 1) ||
+    roomLen === 0 ||
+    roomLen > 64 ||
+    4 + roomLen + verLen !== frame.length
+  ) {
+    sendError(ws, "bad_join_frame");
+    dropClient(ws, "bad_join_frame");
+    return;
+  }
+  const version = frame
+    .subarray(4 + roomLen, 4 + roomLen + verLen)
+    .toString("utf8");
 
   if (role === 0) {
     // Host: create the room.
@@ -233,7 +254,10 @@ function handleJoin(ws, frame) {
     // Client: join an existing room.
     const room = rooms.get(code);
     if (!room) {
-      sendError(ws, "That room doesn't exist. Double-check the code with the host.");
+      sendError(
+        ws,
+        "That room doesn't exist. Double-check the code with the host.",
+      );
       dropClient(ws, "room_not_found");
       return;
     }
@@ -248,7 +272,9 @@ function handleJoin(ws, frame) {
     room.members.set(id, ws);
     sendJoined(ws, id);
     sendPeerJoin(room.host, id);
-    console.log(`[lc-relay] room ${code}: member ${id} joined (${room.memberCount()} in room)`);
+    console.log(
+      `[lc-relay] room ${code}: member ${id} joined (${room.memberCount()} in room)`,
+    );
   }
 }
 
@@ -262,7 +288,10 @@ function lcRelayUpgrade(req, socket, head) {
   });
 }
 
-const wss = new WebSocketServer({ noServer: true, maxPayload: MAX_FRAME_BYTES });
+const wss = new WebSocketServer({
+  noServer: true,
+  maxPayload: MAX_FRAME_BYTES,
+});
 
 wss.on("connection", (ws, req) => {
   let lastSeen = Date.now();
@@ -287,7 +316,9 @@ wss.on("connection", (ws, req) => {
   // Heartbeat: drop sockets that stop talking (flaky school connections die silently).
   const hb = setInterval(() => {
     if (Date.now() - lastSeen > IDLE_TIMEOUT_MS) {
-      console.log(`[lc-relay] dropping idle connection (${req.socket.remoteAddress})`);
+      console.log(
+        `[lc-relay] dropping idle connection (${req.socket.remoteAddress})`,
+      );
       ws.terminate();
       clearInterval(hb);
     }

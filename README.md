@@ -5,6 +5,8 @@
   <p>open source again after 5 months</p>
 </div>
 
+> **Installing this replacement package?** Start with [REPLACEMENT-README.md](REPLACEMENT-README.md). Merge over your existing project so your omitted assets, configuration and live data are retained. See [FIXES.md](FIXES.md) and [QA.md](QA.md) for completed work and verification limits.
+
 ## what's inside
 
 - **Games**: big library with search, filters, favorites, and a popular section
@@ -24,7 +26,7 @@
 
 You need a VPS for this: the proxy needs a server and won't work on Vercel or similar platforms.
 
-**you'll need:** [Node.js](https://nodejs.org) (>=20), [Git](https://git-scm.com/download), [pnpm](https://pnpm.io), [Caddy](https://caddyserver.com)
+**you'll need:** [Node.js](https://nodejs.org) (>=20.19), [Git](https://git-scm.com/download), [pnpm](https://pnpm.io), [Caddy](https://caddyserver.com)
 
 ```bash
 git clone https://github.com/mynamescrax/aetheris.git

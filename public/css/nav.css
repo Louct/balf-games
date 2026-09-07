@@ -1,6 +1,10 @@
 :root {
   --sidebar-width: 220px;
-  --sidebar-bg: linear-gradient(180deg, rgba(18, 20, 34, 0.96), rgba(12, 14, 26, 0.98));
+  --sidebar-bg: linear-gradient(
+    180deg,
+    rgba(18, 20, 34, 0.96),
+    rgba(12, 14, 26, 0.98)
+  );
   --sidebar-border: rgba(255, 255, 255, 0.08);
   --sidebar-shadow: 0 32px 80px rgba(0, 0, 0, 0.45);
   --sidebar-top-bg: rgba(255, 255, 255, 0.04);
@@ -66,7 +70,12 @@
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.12),
+    transparent
+  );
   pointer-events: none;
 }
 
@@ -94,10 +103,15 @@
 
 .sidebar-edge {
   position: absolute;
-  top: 0;
-  right: 0;
-  width: 16px;
-  height: 100%;
+  top: 12px;
+  right: 8px;
+  width: 44px;
+  height: 44px;
+  z-index: 2;
+  padding: 0;
+  font-size: 26px;
+  background: transparent;
+  color: var(--nav-text);
   cursor: pointer;
 }
 
@@ -115,9 +129,12 @@
   color: transparent;
   background: var(--sidebar-handle-bg);
   border: 1px solid rgba(255, 255, 255, 0.09);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35),
-              inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  transition: transform 0.16s ease, opacity 0.18s ease;
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transition:
+    transform 0.16s ease,
+    opacity 0.18s ease;
 }
 
 .nav-handle::before {
@@ -134,12 +151,15 @@
     0 12px 0 0 var(--sidebar-handle-color);
 }
 
-.nav-handle::after { display: none; }
+.nav-handle::after {
+  display: none;
+}
 
 .nav-handle:hover {
   transform: translateY(-1px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4),
-              inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .nav-handle:active {
@@ -153,7 +173,7 @@
 
 .logo {
   position: relative;
-  padding: 16px 14px 14px;
+  padding: 16px 52px 14px 14px;
   display: flex;
   align-items: center;
   gap: 11px;
@@ -169,7 +189,12 @@
   right: 14px;
   bottom: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
 }
 
 .logo a {
@@ -225,7 +250,9 @@
   scrollbar-width: none;
 }
 
-.navitems::-webkit-scrollbar { display: none; }
+.navitems::-webkit-scrollbar {
+  display: none;
+}
 
 .navitems-bottom {
   margin-top: auto;
@@ -300,6 +327,10 @@
   transition: opacity 0.16s ease;
 }
 
+.navitem a[data-page="ai"] img {
+  filter: brightness(0) invert(1);
+}
+
 .navitem a:hover img,
 .navitem a.is-active img {
   opacity: 1;
@@ -308,6 +339,7 @@
 .nav-label {
   font-size: 17px;
   font-weight: 600;
+  color: #ffffff;
   letter-spacing: 0.01em;
   line-height: 1;
 }
@@ -329,15 +361,33 @@
   animation: navitemIn 0.22s ease both;
 }
 
-.nav-toggle:checked ~ .sidebar .navitems .navitem:nth-child(1)  { animation-delay: 0.06s; }
-.nav-toggle:checked ~ .sidebar .navitems .navitem:nth-child(2)  { animation-delay: 0.11s; }
-.nav-toggle:checked ~ .sidebar .navitems .navitem:nth-child(3)  { animation-delay: 0.15s; }
-.nav-toggle:checked ~ .sidebar .navitems .navitem:nth-child(4)  { animation-delay: 0.19s; }
-.nav-toggle:checked ~ .sidebar .navitems .navitem:nth-child(5)  { animation-delay: 0.22s; }
-.nav-toggle:checked ~ .sidebar .navitems .navitem:nth-child(6)  { animation-delay: 0.25s; }
-.nav-toggle:checked ~ .sidebar .navitems .navitem:nth-child(7)  { animation-delay: 0.27s; }
-.nav-toggle:checked ~ .sidebar .navitems-bottom .navitem:nth-child(1) { animation-delay: 0.30s; }
-.nav-toggle:checked ~ .sidebar .navitems-bottom .navitem:nth-child(2) { animation-delay: 0.33s; }
+.nav-toggle:checked ~ .sidebar .navitems .navitem:nth-child(1) {
+  animation-delay: 0.06s;
+}
+.nav-toggle:checked ~ .sidebar .navitems .navitem:nth-child(2) {
+  animation-delay: 0.11s;
+}
+.nav-toggle:checked ~ .sidebar .navitems .navitem:nth-child(3) {
+  animation-delay: 0.15s;
+}
+.nav-toggle:checked ~ .sidebar .navitems .navitem:nth-child(4) {
+  animation-delay: 0.19s;
+}
+.nav-toggle:checked ~ .sidebar .navitems .navitem:nth-child(5) {
+  animation-delay: 0.22s;
+}
+.nav-toggle:checked ~ .sidebar .navitems .navitem:nth-child(6) {
+  animation-delay: 0.25s;
+}
+.nav-toggle:checked ~ .sidebar .navitems .navitem:nth-child(7) {
+  animation-delay: 0.27s;
+}
+.nav-toggle:checked ~ .sidebar .navitems-bottom .navitem:nth-child(1) {
+  animation-delay: 0.3s;
+}
+.nav-toggle:checked ~ .sidebar .navitems-bottom .navitem:nth-child(2) {
+  animation-delay: 0.33s;
+}
 
 /* ── Logo fade-in on open ── */
 .nav-toggle:checked ~ .sidebar .logo {
