@@ -27,7 +27,7 @@ You need a VPS for this: the proxy needs a server and won't work on Vercel or si
 **you'll need:** [Node.js](https://nodejs.org) (>=20), [Git](https://git-scm.com/download), [pnpm](https://pnpm.io), [Caddy](https://caddyserver.com)
 
 ```bash
-git clone https://gitlab.com/mynamescrax/aetheris.git
+git clone https://github.com/mynamescrax/aetheris.git
 cd aetheris
 pnpm install
 ```

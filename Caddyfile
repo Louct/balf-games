@@ -296,8 +296,7 @@ https:// {
 	import files_proxy /proxy/veck-files files.veck.io
 	import root_proxy /proxy/veck veck.io
 
-	# GitLab-hosted game builds. Statically's GitLab edge can stall large Unity
-	# parts at a few hundred bytes/sec; stream the raw files through our own
+	# GitHub-hosted game builds. Stream the raw files through our own
 	# origin instead so browsers also avoid cross-origin restrictions.
 	@game_javascript path_regexp game_javascript ^/game-assets/.*\.js$
 	header @game_javascript >Content-Type "application/javascript; charset=utf-8"
@@ -306,9 +305,9 @@ https:// {
 	header @game_stylesheet >Content-Type "text/css; charset=utf-8"
 
 	handle_path /game-assets/1games-rips/* {
-		rewrite * /mynamescrax/1games-rips/-/raw/main{path}
-		reverse_proxy gitlab.com:443 {
-			header_up Host gitlab.com
+		rewrite * /mynamescrax/1games-rips/main{path}
+		reverse_proxy raw.githubusercontent.com:443 {
+			header_up Host raw.githubusercontent.com
 			header_down -Content-Disposition
 			header_down -X-Content-Type-Options
 			transport http {
@@ -318,9 +317,9 @@ https:// {
 	}
 
 	handle_path /game-assets/gamesforaetheris/* {
-		rewrite * /mynamescrax/gamesforaetheris/-/raw/main{path}
-		reverse_proxy gitlab.com:443 {
-			header_up Host gitlab.com
+		rewrite * /mynamescrax/gamesforaetheris/main{path}
+		reverse_proxy raw.githubusercontent.com:443 {
+			header_up Host raw.githubusercontent.com
 			header_down -Content-Disposition
 			header_down -X-Content-Type-Options
 			transport http {
